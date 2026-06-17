@@ -1,0 +1,28 @@
+<saetickets version="1.0">
+  <setup width="48"/>
+  <commands>
+    <text align="center" bold="true" size="large">SAE POS</text>
+    <text align="center" bold="true" size="medium">CIERRE DE SESION</text>
+    <separator char="="/>
+    <text>Caja: ${CAJA}</text>
+    <text>Apertura: ${APERTURA}</text>
+    <text>Cierre: ${CIERRE}</text>
+    <separator char="-"/>
+    <total label="Esperado" value="${ESPERADO}" align="left"/>
+    <total label="Contado" value="${CONTADO}" align="left"/>
+    <total label="Diferencia" value="${DIFERENCIA}" bold="true" align="left"/>
+    <separator char="-"/>
+    <if expr="SOBRANTE">
+      <text align="center" bold="true" size="medium">SOBRANTE</text>
+    </if>
+    <if expr="FALTANTE">
+      <text align="center" bold="true" size="medium">FALTANTE</text>
+    </if>
+    <if expr="CUADRADO">
+      <text align="center" bold="true" size="medium">CUADRADO</text>
+    </if>
+    <separator char="="/>
+    <feed lines="3"/>
+    <cut/>
+  </commands>
+</saetickets>

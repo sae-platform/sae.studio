@@ -1,0 +1,49 @@
+{
+  "name": "sae-studio-app",
+  "version": "0.5.6",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host",
+    "build": "astro build",
+    "preview": "astro preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "gen:api": "node scripts/gen-api.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.4.0",
+    "@tanstack/react-query": "^5.99.0",
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-updater": "^2.10.0",
+    "astro": "^5.13.0",
+    "jsbarcode": "^3.12.3",
+    "lucide-react": "^0.577.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "sonner": "^2.0.7",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.93.1",
+    "@tauri-apps/cli": "^2.1.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.8",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.8"
+  },
+  "homepage": "https://studio.saesystem.solutions/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EskenderDev/SAE.STUDIO.APP"
+  }
+}

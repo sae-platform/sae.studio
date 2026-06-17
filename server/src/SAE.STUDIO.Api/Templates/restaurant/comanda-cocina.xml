@@ -1,0 +1,20 @@
+<saetickets version="1.0">
+  <setup width="42"/>
+  <commands>
+    <text align="center" bold="true" size="large">SAE POS</text>
+    <text align="center" bold="true" size="medium">COCINA</text>
+    <separator char="="/>
+    <text>Mesa: ${MESA}</text>
+    <text>Hora: ${!TIME}</text>
+    <text>${GUEST}</text>
+    <separator char="-"/>
+    <text size="large" bold="true">${ITEM}</text>
+    <text>Cant: ${QTY}</text>
+    <if expr="HAS_NOTAS">
+      <text align="left">Notas: ${NOTAS}</text>
+    </if>
+    <separator char="="/>
+    <feed lines="3"/>
+    <cut/>
+  </commands>
+</saetickets>

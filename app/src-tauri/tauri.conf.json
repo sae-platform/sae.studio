@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SAE.STUDIO.APP",
+  "version": "0.5.6",
+  "identifier": "dev.eskender.saestudio",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:4321",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SAE.STUDIO.APP",
+        "transparent": true,
+        "decorations": false,
+        "shadow": true,
+        "width": 1200,
+        "height": 860,
+        "resizable": true,
+        "dragDropEnabled": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "bin/SAE.STUDIO.Api"
+    ],
+    "resources": {
+      "bin/Schemas/": "Schemas/"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsh"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/EskenderDev/SAE.STUDIO.APP/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUyNzk0QjQ5MUU1Q0EwOTIKUldTU29Gd2VTVXQ1VWlpamIxR0RqaFFvSkM0YzhhdWFsRTI4ZXlORjNEb1JFNCtLVVdFV2V6OHkK"
+    }
+  }
+}

@@ -1,0 +1,1255 @@
+/* ============================================================
+   SAE Document Designer — Complete Styles
+   Canvas + Bands + Components model
+   ============================================================ */
+
+/* ── Layout ──────────────────────────────────────────────── */
+
+.docDesigner {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 292px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: var(--surface, #eef2f7);
+  color: var(--text, #0f172a);
+  outline: none;
+}
+
+.docDesigner__main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-inline: 1px solid var(--border, #d9e2ec);
+  background: var(--surface, #f8fafc);
+}
+
+/* ── Left Panel ──────────────────────────────────────────── */
+
+.docLeftPanel {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  background: var(--bg-card, #ffffff);
+  border-right: 1px solid var(--border, #d9e2ec);
+  position: relative;
+}
+
+.docLeftTabs {
+  display: flex;
+  flex-direction: column;
+  width: 68px;
+  border-right: 1px solid var(--border, #d9e2ec);
+  background: var(--surface-alt, #f8fafc);
+  flex-shrink: 0;
+}
+
+.docLeftTab {
+  width: 100%;
+  padding: 0.85rem 0;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.docLeftTab:hover {
+  color: var(--text, #0f172a);
+}
+
+.docLeftTab.active {
+  color: var(--accent, #0f766e);
+  font-weight: 900;
+  background: transparent;
+}
+
+[data-theme="dark"] .docLeftTab.active {
+  color: var(--accent, #14b8a6);
+  background: transparent;
+}
+
+.docLeftContent {
+  flex: 1;
+  min-width: 200px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+
+.docDesignerToolbar {
+  height: 46px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.85rem;
+  background: var(--bg-card, #ffffff);
+  border-bottom: 1px solid var(--border, #d9e2ec);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+}
+[data-theme="dark"] .docDesignerToolbar {
+  background: #162032;
+  border-bottom-color: #2d3f55;
+}
+
+.docToolbarIcon { color: var(--accent, #0f766e); flex-shrink: 0; }
+
+.docToolbarTitle {
+  font-size: 0.83rem;
+  font-weight: 800;
+  white-space: nowrap;
+  margin-right: 0.2rem;
+  color: #0f172a;
+}
+[data-theme="dark"] .docToolbarTitle { color: #e2e8f0; }
+
+.docToolbarSep {
+  width: 1px;
+  height: 20px;
+  background: #cbd5e1;
+  margin: 0 0.2rem;
+}
+[data-theme="dark"] .docToolbarSep { background: #334155; }
+
+.docToolbarSpacer { flex: 1; }
+
+.docToolbarBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.docToolbarBtn svg { color: #475569; flex-shrink: 0; }
+
+.docToolbarBtn:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.docToolbarBtn:hover:not(:disabled) svg { color: #0f172a; }
+
+.docToolbarBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: transparent;
+}
+.docToolbarBtn:disabled svg { color: #94a3b8; }
+
+/* ── Dark theme overrides ────────────────────────────────── */
+[data-theme="dark"] .docToolbarBtn {
+  border-color: #334155;
+  background: #1a2332;
+  color: #cbd5e1;
+}
+[data-theme="dark"] .docToolbarBtn svg { color: #94a3b8; }
+
+[data-theme="dark"] .docToolbarBtn:hover:not(:disabled) {
+  background: #243447;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .docToolbarBtn:hover:not(:disabled) svg { color: #cbd5e1; }
+
+[data-theme="dark"] .docToolbarBtn:disabled {
+  opacity: 0.5;
+}
+[data-theme="dark"] .docToolbarBtn:disabled svg { color: #64748b; }
+
+.docZoomLabel {
+  min-width: 42px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #475569;
+}
+
+/* ── Dark: toolbar extras ─────────────────────────────────── */
+[data-theme="dark"] .docToolbarSep { background: #334155; }
+[data-theme="dark"] .docZoomLabel { color: #94a3b8; }
+
+.docViewSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.18rem;
+  border: 1px solid #d9e2ec;
+  border-radius: 9px;
+  background: #f1f5f9;
+}
+
+.docViewSwitch button {
+  height: 28px;
+  padding: 0 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+}
+.docViewSwitch button svg { color: inherit; }
+
+.docViewSwitch button.active {
+  background: #0f766e;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.22);
+}
+
+[data-theme="dark"] .docViewSwitch {
+  background: #0f1a2a;
+  border-color: #1e2d42;
+}
+[data-theme="dark"] .docViewSwitch button { color: #94a3b8; }
+[data-theme="dark"] .docViewSwitch button svg { color: inherit; }
+[data-theme="dark"] .docViewSwitch button.active {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+/* ── Canvas ──────────────────────────────────────────────── */
+
+.docCanvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 2.5rem 2rem;
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(rgba(148, 163, 184, 0.18) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ── Page ────────────────────────────────────────────────── */
+
+.docPageWrap {
+  width: fit-content;
+  min-width: 300px;
+  margin: 0 auto 3rem;
+}
+
+.docPageMeta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  color: var(--muted, #64748b);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.docPageMeta span {
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--border, #d9e2ec);
+  border-radius: 999px;
+  background: var(--bg-card, #ffffff);
+}
+
+.docPage {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow:
+    0 2px 4px rgba(15, 23, 42, 0.06),
+    0 20px 60px rgba(15, 23, 42, 0.18);
+  cursor: default;
+  overflow: hidden;
+}
+
+/* ── Bands ───────────────────────────────────────────────── */
+
+.docBandWrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.docBandCanvas {
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: background 0.12s;
+}
+
+.docBandCanvas--header { }
+.docBandCanvas--body   { }
+.docBandCanvas--footer { }
+
+/* Hide editing decorations in preview mode */
+.docPageWrap--preview .docPageMeta,
+.docPageWrap--preview .docBandLabel,
+.docPageWrap--preview .docBandHeight,
+.docPageWrap--preview .docBandResize { display: none; }
+
+.docBandCanvas--dropover {
+  background: rgba(20, 184, 166, 0.06) !important;
+  outline: 2px dashed var(--accent, #0f766e);
+  outline-offset: -2px;
+}
+
+.docBandLabel {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  color: #94a3b8;
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+}
+
+.docBandHeight {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  color: #94a3b8;
+  font-size: 0.52rem;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Band Resize Handle ──────────────────────────────────── */
+
+.docBandResize {
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.2rem;
+  cursor: ns-resize;
+  user-select: none;
+  position: relative;
+  z-index: 50;
+  margin-top: -1px;
+  margin-bottom: -1px;
+}
+
+.docBandResize::before {
+  content: "";
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  top: 50%;
+  height: 1px;
+  background: #e5e7eb;
+  transform: translateY(-50%);
+  transition: background 0.15s;
+}
+
+.docBandResize::after {
+  content: "⠿";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #e5e7eb;
+  font-size: 0.65rem;
+  line-height: 1;
+  transition: color 0.15s;
+  background: #f8fafc;
+  padding: 0 4px;
+}
+
+.docBandResize:hover::before { background: #cbd5e1; }
+.docBandResize:hover::after  { color: #0f766e; }
+
+/* ── Canvas Elements ─────────────────────────────────────── */
+
+.docCanvasEl {
+  box-sizing: border-box;
+  min-height: 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: border-color 0.1s, background 0.1s, box-shadow 0.1s;
+  user-select: none;
+}
+
+.docCanvasEl:hover {
+  border-color: rgba(20, 184, 166, 0.5);
+  background: rgba(20, 184, 166, 0.04);
+}
+
+.docCanvasEl.selected {
+  border-color: var(--accent, #0f766e) !important;
+  background: rgba(20, 184, 166, 0.06) !important;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15);
+  z-index: 10;
+}
+
+.docCanvasEl.locked {
+  opacity: 0.65;
+}
+
+.docCanvasEl--line {
+  overflow: visible;
+  background: transparent !important;
+}
+
+/* ── Resize Handles ──────────────────────────────────────── */
+
+.docResizeHandle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--accent, #0f766e);
+  border: 1.5px solid #ffffff;
+  border-radius: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  z-index: 20;
+  transition: transform 0.1s;
+}
+
+.docResizeHandle:hover {
+  transform: scale(1.3);
+}
+
+/* ── Element visuals ─────────────────────────────────────── */
+
+.docEl__image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    45deg, rgba(148,163,184,0.15) 0, rgba(148,163,184,0.15) 2px,
+    transparent 2px, transparent 8px
+  );
+  border: 1px dashed #94a3b8;
+  font-size: 0.65rem;
+  color: #64748b;
+}
+
+.docEl__image-label { font-size: 0.65rem; }
+
+.docEl__barcode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 2px;
+  font-size: 0.58rem;
+  color: #334155;
+}
+
+.docEl__barcode-bars {
+  width: 90%;
+  height: 65%;
+  background: repeating-linear-gradient(
+    90deg, #111827 0, #111827 2px, transparent 2px, transparent 5px,
+    #111827 5px, #111827 7px, transparent 7px, transparent 10px
+  );
+}
+
+.docEl__qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #111827;
+}
+
+.docEl__table {
+  width: 100%;
+  border: 1px dashed #94a3b8;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  overflow: hidden;
+}
+
+.docEl__table-head {
+  display: flex;
+  background: #1e293b;
+  color: #f8fafc;
+  font-weight: 800;
+}
+
+.docEl__table-head span,
+.docEl__table-row span {
+  flex: 1;
+  padding: 0.2rem 0.35rem;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docEl__table-row {
+  display: flex;
+  border-top: 1px solid #e2e8f0;
+}
+
+.docEl__table-row span { border-right-color: #e2e8f0; }
+.docEl__table-row:nth-child(even) { background: #f8fafc; }
+
+.docEl__table-sample span { color: #94a3b8; }
+
+.docEl__table-more {
+  padding: 0.18rem 0.35rem;
+  font-size: 0.58rem;
+  color: #94a3b8;
+  text-align: center;
+  border-top: 1px solid #e2e8f0;
+}
+
+.docEl__panel {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.docEl__container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    135deg, rgba(15,118,110,0.06) 0, rgba(15,118,110,0.06) 3px,
+    transparent 3px, transparent 9px
+  );
+  border: 1px dashed rgba(15,118,110,0.4);
+  border-radius: 3px;
+}
+
+.docEl__type-badge {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  background: rgba(15,118,110,0.12);
+  color: #0f766e;
+  font-size: 0.52rem;
+  font-weight: 900;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+.docEl__pagebreak,
+.docEl__sectionbreak {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: #94a3b8;
+  font-style: italic;
+  border-top: 1px dashed #94a3b8;
+}
+
+.docEl__unknown {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  padding: 0.2rem;
+}
+
+/* ── XML Editor ──────────────────────────────────────────── */
+
+.docXmlWrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.docXmlError {
+  padding: 0.5rem 1rem;
+  background: #fef2f2;
+  border-bottom: 1px solid #fca5a5;
+  color: #dc2626;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.docXmlEditor {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  resize: none;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: var(--bg-card, #ffffff);
+  color: var(--text, #0f172a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.docXmlActions {
+  padding: 0.6rem 1rem;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border, #d9e2ec);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.docXmlApply {
+  padding: 0.45rem 1.2rem;
+  border: 0;
+  border-radius: 7px;
+  background: var(--accent, #0f766e);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+.docXmlApply:hover { opacity: 0.88; }
+
+/* ── Palette ─────────────────────────────────────────────── */
+
+.docPalette {
+  padding: 0.75rem;
+}
+
+.docPaletteGroup {
+  margin-bottom: 0.65rem;
+}
+
+.docPaletteGroupLabel {
+  padding: 0.3rem 0.35rem 0.2rem;
+  color: var(--muted, #64748b);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.docPaletteItem {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text, #0f172a);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: grab;
+  transition: background 0.1s, border-color 0.1s, transform 0.1s;
+  user-select: none;
+  width: 100%;
+  text-align: left;
+}
+
+.docPaletteItem svg { color: var(--accent, #0f766e); flex-shrink: 0; }
+
+.docPaletteItem:hover {
+  background: var(--surface-alt, #f1f5f9);
+  border-color: var(--border, #d9e2ec);
+}
+
+.docPaletteItem:active { cursor: grabbing; transform: scale(0.97); }
+.docPaletteItem--action { cursor: pointer; }
+
+/* ── Properties Panel ────────────────────────────────────── */
+
+.docProperties {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-card, #ffffff);
+}
+
+.docPropHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem 0;
+}
+
+.docPropDelete {
+  display: flex;
+  align-items: center;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.docPropDelete:hover { background: #fef2f2; border-color: #fca5a5; }
+
+.docIconBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.docIconBtn:hover { background: #f1f5f9; color: #1e293b; border-color: #94a3b8; }
+.docIconBtn--danger:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+
+[data-theme="dark"] .docIconBtn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+[data-theme="dark"] .docIconBtn:hover { background: #1e2d42; color: #cbd5e1; }
+[data-theme="dark"] .docIconBtn--danger:hover { background: #3b1515; color: #f87171; border-color: #7f1d1d; }
+
+.docPropTabs {
+  display: flex;
+  gap: 0;
+  padding: 0.5rem 0.75rem 0;
+  border-bottom: 1px solid var(--border, #d9e2ec);
+}
+
+.docPropTab {
+  padding: 0.35rem 0.7rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  margin-bottom: -1px;
+}
+
+.docPropTab.active {
+  color: var(--accent, #0f766e);
+  font-weight: 800;
+  background: transparent;
+  border-bottom-color: transparent;
+}
+
+.docPropBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+}
+
+.docPropertiesEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 1.5rem 1rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--border, #d9e2ec);
+  border-radius: 10px;
+  background: var(--surface-alt, #f8fafc);
+  color: var(--muted, #64748b);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ── Form Fields ─────────────────────────────────────────── */
+
+.docPanelEyebrow {
+  color: var(--muted, #64748b);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.docField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin: 0;
+  color: var(--muted, #64748b);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.docFieldGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.docFieldRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.docInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border, #d9e2ec);
+  border-radius: 7px;
+  background: var(--surface, #ffffff);
+  color: var(--text, #0f172a);
+  font: inherit;
+  font-size: 0.8rem;
+  transition: border-color 0.12s, box-shadow 0.12s;
+  box-sizing: border-box;
+}
+
+.docInput:focus {
+  outline: none;
+  border-color: var(--accent, #0f766e);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.docInput--error { border-color: #ef4444; }
+
+.docColorInput {
+  padding: 0.2rem;
+  height: 32px;
+  cursor: pointer;
+}
+
+.docCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  color: var(--text, #0f172a);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.docCheckbox input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent, #0f766e);
+}
+
+.docAlignGroup {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.docAlignBtn {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--border, #d9e2ec);
+  border-radius: 5px;
+  background: transparent;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.docAlignBtn.active {
+  background: var(--accent, #0f766e);
+  border-color: var(--accent, #0f766e);
+  color: #fff;
+}
+
+/* ── Table Column Editor ─────────────────────────────────── */
+
+.docColList { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.docColRow {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.docColInput { flex: 1; min-width: 0; }
+.docColInput--sm { flex: 0 0 48px; }
+
+.docColDelete {
+  display: flex;
+  align-items: center;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #ef4444;
+  cursor: pointer;
+}
+
+.docColDelete:hover { background: #fef2f2; }
+
+.docColAdd {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  margin-top: 0.3rem;
+  border: 1px dashed var(--border, #d9e2ec);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.docColAdd:hover {
+  background: var(--surface-alt, #f1f5f9);
+  border-color: var(--accent, #0f766e);
+  color: var(--accent, #0f766e);
+}
+
+/* ── DataSource Panel ────────────────────────────────────── */
+
+.docDsPanel { padding: 0.75rem; }
+
+.docDsSection {
+  margin-bottom: 0.85rem;
+}
+
+.docDsSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.3rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  margin-bottom: 0.4rem;
+}
+
+.docDsTextarea {
+  height: 120px;
+  min-height: 80px;
+  padding: 0.5rem 0.6rem;
+  resize: vertical;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.docDsError {
+  display: block;
+  margin-top: 0.25rem;
+  color: #ef4444;
+  font-size: 0.68rem;
+}
+
+.docDsItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.4rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  background: var(--surface-alt, #f8fafc);
+  margin-bottom: 0.25rem;
+}
+
+.docDsName { font-weight: 700; color: var(--text, #0f172a); }
+
+.docDsType {
+  font-size: 0.62rem;
+  color: var(--muted, #64748b);
+  background: var(--border, #e2e8f0);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+/* ── Page Navigation ─────────────────────────────────────── */
+
+.docPageNav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.docPageNav__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.35rem 0.75rem;
+}
+
+.docPageNavItem {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 0.35rem;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.docPageNavItem:hover { background: var(--surface-alt, #f1f5f9); }
+.docPageNavItem.active {
+  background: rgba(15,118,110,0.06);
+  border-color: rgba(15,118,110,0.3);
+}
+
+.docPageNavThumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+}
+
+.docPageNavNum {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: var(--muted, #94a3b8);
+}
+
+.docPageNavPreview {
+  width: 36px;
+  min-height: 28px;
+  border: 1px solid var(--border, #d9e2ec);
+  background: #fff;
+  border-radius: 2px;
+}
+
+.docPageNavMeta { flex: 1; min-width: 0; }
+
+.docPageNavSize {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--muted, #64748b);
+  font-weight: 600;
+}
+
+.docPageNavActions {
+  display: flex;
+  gap: 0.15rem;
+  margin-top: 0.2rem;
+}
+
+.docPageNavActions button {
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.docPageNavActions button:hover:not(:disabled) {
+  background: var(--surface-alt, #e2e8f0);
+  color: var(--text, #0f172a);
+}
+
+.docPageNavActions button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.docPageNavAdd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0.75rem 0.75rem;
+  padding: 0.5rem;
+  border: 1px dashed var(--border, #d9e2ec);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted, #64748b);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.docPageNavAdd:hover {
+  background: var(--surface-alt, #f1f5f9);
+  border-color: var(--accent, #0f766e);
+  color: var(--accent, #0f766e);
+}
+
+/* ── Layers Panel ────────────────────────────────────────── */
+
+.docLayersPanel { display: flex; flex-direction: column; height: 100%; }
+
+.docLayersList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.35rem 0.75rem;
+}
+
+.docLayerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  margin-bottom: 0.25rem;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.docLayerItem:hover { background: var(--surface-alt, #f1f5f9); }
+.docLayerItem.active {
+  background: rgba(15,118,110,0.06);
+  border-color: rgba(15,118,110,0.3);
+}
+
+.docLayerItem.invisible { opacity: 0.5; }
+
+.docLayerBtn {
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted, #64748b);
+  cursor: pointer;
+  transition: color 0.1s;
+  flex-shrink: 0;
+}
+
+.docLayerBtn:hover:not(:disabled) { color: var(--text, #0f172a); }
+.docLayerBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+.docLayerBtn--del:hover { color: #ef4444 !important; }
+
+.docLayerName {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text, #0f172a);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: text;
+  padding: 0 0.2rem;
+}
+
+.docLayerName:focus {
+  outline: none;
+  background: var(--surface-alt, #f1f5f9);
+  border-radius: 3px;
+}
+
+/* ── Dark mode ───────────────────────────────────────────── */
+
+[data-theme="dark"] .docDesigner {
+  background: #0b1120;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .docDesigner__main,
+[data-theme="dark"] .docLeftPanel,
+[data-theme="dark"] .docProperties {
+  background: #111827;
+  border-color: #1e2d42;
+}
+
+[data-theme="dark"] .docDesignerToolbar,
+[data-theme="dark"] .docLeftTabs {
+  background: #0f1a2a;
+  border-color: #1e2d42;
+}
+
+[data-theme="dark"] .docCanvas {
+  background-color: #0b1120;
+  background-image: radial-gradient(rgba(71,85,105,0.35) 1px, transparent 1px);
+}
+
+[data-theme="dark"] .docPage {
+  background: #ffffff;
+  border-color: #94a3b8;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25), 0 20px 60px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .docBandResize::before { background: #334155; }
+[data-theme="dark"] .docBandResize::after  { color: #334155; background: #0b1120; }
+[data-theme="dark"] .docBandResize:hover::before { background: #475569; }
+[data-theme="dark"] .docBandResize:hover::after  { color: #14b8a6; }
+
+[data-theme="dark"] .docInput {
+  background: #0b1120;
+  border-color: #1e2d42;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .docViewSwitch {
+  background: #0f1a2a;
+  border-color: #1e2d42;
+}
+
+[data-theme="dark"] .docPaletteItem:hover {
+
+[data-theme="dark"] .docXmlEditor {
+  background: #0b1120;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .docPageNavPreview { background: #1a2235; border-color: #2d4060; }
+[data-theme="dark"] .docDsItem { background: #0f1a2a; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+
+@media (max-width: 1200px) {
+  .docDesigner { grid-template-columns: 200px minmax(0, 1fr) 260px; }
+}
+
+@media (max-width: 960px) {
+  .docDesigner { grid-template-columns: 48px minmax(0, 1fr) 240px; }
+  .docLeftTab span { display: none; }
+  .docPaletteItem span { display: none; }
+  .docPaletteItem { justify-content: center; }
+}

@@ -1,0 +1,35 @@
+<saedocument version="1.0">
+  <setup pageSize="A4" marginTop="15mm" marginBottom="15mm" marginLeft="12mm" marginRight="12mm"/>
+  <header>
+    <text size="20" bold="true" align="center">${!EMPRESA}</text>
+    <spacer height="5"/>
+    <line/>
+    <spacer height="3"/>
+    <text size="16" bold="true" align="center">ESTADO DE CUENTA</text>
+    <text size="10" align="center">${PERIODO}</text>
+    <spacer height="5"/>
+    <text size="10" bold="true">Cliente: ${CLIENTE_NOMBRE}</text>
+    <text size="9">Saldo anterior: ${SALDO_ANTERIOR}</text>
+    <spacer height="5"/>
+  </header>
+  <body>
+    <table source="MOVIMIENTOS" showHeader="true">
+      <column field="FECHA" header="Fecha" width="25mm"/>
+      <column field="DOCUMENTO" header="Documento" width="30mm"/>
+      <column field="CONCEPTO" header="Concepto" width="*"/>
+      <column field="CARGO" header="Cargo" width="22mm" align="right"/>
+      <column field="ABONO" header="Abono" width="22mm" align="right"/>
+      <column field="SALDO" header="Saldo" width="25mm" align="right"/>
+    </table>
+    <spacer height="5"/>
+    <line/>
+  </body>
+  <footer>
+    <table source="TOTALES" showHeader="false">
+      <column field="CONCEPTO" header="" width="*" align="right"/>
+      <column field="VALOR" header="" width="25mm" align="right"/>
+    </table>
+    <spacer height="10"/>
+    <text size="7" align="center">Generado el ${!DATE} ${!TIME}</text>
+  </footer>
+</saedocument>

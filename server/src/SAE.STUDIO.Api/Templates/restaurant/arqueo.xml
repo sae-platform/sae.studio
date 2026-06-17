@@ -1,0 +1,30 @@
+<saetickets version="1.0">
+  <setup width="48"/>
+  <commands>
+    <text align="center" bold="true" size="large">SAE POS</text>
+    <text align="center" bold="true" size="medium">ARQUEO DE CAJA</text>
+    <separator char="="/>
+    <text>Caja: ${CAJA}</text>
+    <text>Fecha: ${!DATE} ${!TIME}</text>
+    <separator char="-"/>
+    <text bold="true" align="center">RESUMEN</text>
+    <total label="Esperado" value="${ESPERADO}" align="left"/>
+    <total label="Contado" value="${CONTADO}" align="left"/>
+    <total label="Diferencia" value="${DIFERENCIA}" bold="true" align="left"/>
+    <separator char="-"/>
+    <text bold="true" align="center">DENOMINACIONES</text>
+    <each listVar="BILLETES" header="true">
+      <column field="DENOMINACION" label="Billete" width="14"/>
+      <column field="CANTIDAD" label="Cant" width="6" align="right"/>
+      <column field="SUBTOTAL" label="Subtotal" width="auto" align="right"/>
+    </each>
+    <each listVar="MONEDAS" header="true">
+      <column field="DENOMINACION" label="Moneda" width="14"/>
+      <column field="CANTIDAD" label="Cant" width="6" align="right"/>
+      <column field="SUBTOTAL" label="Subtotal" width="auto" align="right"/>
+    </each>
+    <separator char="="/>
+    <feed lines="3"/>
+    <cut/>
+  </commands>
+</saetickets>

@@ -1,0 +1,32 @@
+<saedocument version="1.0">
+  <setup pageSize="A4" marginTop="15mm" marginBottom="15mm" marginLeft="12mm" marginRight="12mm"/>
+  <header>
+    <text size="20" bold="true" align="center">${!EMPRESA}</text>
+    <text size="10" align="center">${!DIRECCION} — Tel: ${!TELEFONO}</text>
+    <spacer height="5"/>
+    <line/>
+    <spacer height="3"/>
+    <text size="16" bold="true" align="center">RECIBO DE PAGO</text>
+    <text size="10" align="center">#${NUMERO}</text>
+    <spacer height="5"/>
+    <text size="10" bold="true">Cliente: ${CLIENTE_NOMBRE}</text>
+    <text size="9">Fecha: ${FECHA} — Método: ${METODO_PAGO}</text>
+    <spacer height="5"/>
+  </header>
+  <body>
+    <text size="12" bold="true" align="center">Monto recibido: ${MONTO}</text>
+    <spacer height="5"/>
+    <text size="10">Concepto: ${CONCEPTO}</text>
+    <spacer height="3"/>
+    <text size="9">Referencia: ${REFERENCIA}</text>
+    <spacer height="10"/>
+    <text size="9">Recibido por: ${RECIBIDO_POR}</text>
+  </body>
+  <footer>
+    <spacer height="20"/>
+    <line/>
+    <text size="8" align="center">Firma del cliente</text>
+    <spacer height="5"/>
+    <text size="7" align="center">Generado el ${!DATE} ${!TIME}</text>
+  </footer>
+</saedocument>

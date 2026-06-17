@@ -1,0 +1,23 @@
+<saetickets version="1.0">
+  <setup width="48"/>
+  <commands>
+    <text align="center" bold="true" size="large">SAE POS</text>
+    <text align="center" bold="true" size="medium">INFORME Y #${NUMERO}</text>
+    <text align="center">Snapshot de Sesion</text>
+    <separator char="="/>
+    <text>Caja: ${CAJA}</text>
+    <text>Cajero: ${CAJERO}</text>
+    <text>Fecha: ${!DATE} ${!TIME}</text>
+    <separator char="-"/>
+    <text bold="true" align="center">RESUMEN DE VENTAS</text>
+    <separator char="-"/>
+    <total label="Ventas" value="${VENTAS}" align="left"/>
+    <total label="Efectivo" value="${EFECTIVO}" align="left"/>
+    <total label="Facturas" value="${FACTURAS}" align="left"/>
+    <separator char="-"/>
+    <total label="Esperado" value="${ESPERADO}" bold="true" align="left"/>
+    <separator char="="/>
+    <feed lines="3"/>
+    <cut/>
+  </commands>
+</saetickets>

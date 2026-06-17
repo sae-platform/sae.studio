@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:element name="saetickets">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="setup"/>
+        <xs:element ref="commands"/>
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="setup">
+    <xs:complexType>
+      <xs:attribute name="width" type="xs:positiveInteger" use="required"/>
+      <xs:attribute name="printers" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="commands">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element ref="text"/>
+          <xs:element ref="separator"/>
+          <xs:element ref="total"/>
+          <xs:element ref="qr"/>
+          <xs:element ref="feed"/>
+          <xs:element ref="cut"/>
+          <xs:element ref="beep"/>
+          <xs:element ref="open-drawer"/>
+          <xs:element ref="if"/>
+          <xs:element ref="ifelse"/>
+          <xs:element ref="each"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Attrs comunes: align, showIf -->
+  <xs:attributeGroup name="commonAttrs">
+    <xs:attribute name="showIf" type="xs:string"/>
+    <xs:attribute name="align">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="left"/>
+          <xs:enumeration value="center"/>
+          <xs:enumeration value="right"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="formatAttrs">
+    <xs:attribute name="bold" type="xs:boolean"/>
+    <xs:attribute name="extraBold" type="xs:boolean"/>
+    <xs:attribute name="size">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="normal"/>
+          <xs:enumeration value="medium"/>
+          <xs:enumeration value="large"/>
+          <xs:enumeration value="extra-large"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <!-- Text -->
+  <xs:element name="text">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attributeGroup ref="formatAttrs"/>
+      <xs:attribute name="align" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Separator -->
+  <xs:element name="separator">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attribute name="char" type="xs:string" default="-"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Total -->
+  <xs:element name="total">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attributeGroup ref="formatAttrs"/>
+      <xs:attribute name="label" type="xs:string" default="TOTAL"/>
+      <xs:attribute name="value" type="xs:string" default="0"/>
+      <xs:attribute name="align" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- QR -->
+  <xs:element name="qr">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attribute name="size" type="xs:positiveInteger" default="80"/>
+      <xs:attribute name="align" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Feed -->
+  <xs:element name="feed">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attribute name="lines" type="xs:nonNegativeInteger" default="1"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Actions -->
+  <xs:element name="cut">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="beep">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="open-drawer">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- If -->
+  <xs:element name="if">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attributeGroup ref="formatAttrs"/>
+      <xs:attribute name="expr" type="xs:string" use="required"/>
+      <xs:attribute name="align" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- IfElse -->
+  <xs:element name="ifelse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="then" type="xs:string"/>
+        <xs:element name="else" type="xs:string"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attributeGroup ref="formatAttrs"/>
+      <xs:attribute name="expr" type="xs:string" use="required"/>
+      <xs:attribute name="align" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Each -->
+  <xs:element name="each">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="column" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attribute name="listVar" type="xs:string" use="required"/>
+      <xs:attribute name="header" type="xs:boolean" default="true"/>
+      <xs:attribute name="childField" type="xs:string"/>
+      <xs:attribute name="childIndentCol" type="xs:nonNegativeInteger" default="0"/>
+      <xs:attribute name="align" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="column">
+    <xs:complexType>
+      <xs:attributeGroup ref="commonAttrs"/>
+      <xs:attributeGroup ref="formatAttrs"/>
+      <xs:attribute name="field" type="xs:string" use="required"/>
+      <xs:attribute name="label" type="xs:string" use="required"/>
+      <xs:attribute name="width" type="xs:string" default="auto"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,146 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Documentación | SAE.STUDIO">
+  <main class="relative pt-24 pb-16 w-full max-w-4xl mx-auto px-6">
+    <div class="fixed top-0 left-0 w-full h-full -z-10 bg-[#0B0F19] overflow-hidden">
+        <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]"></div>
+    </div>
+
+    <header class="mb-12">
+      <a href="/" class="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-2 mb-8 group">
+        <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="https://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Volver al inicio
+      </a>
+      <h1 class="text-4xl lg:text-5xl font-bold text-white mb-4">Documentación: Etiquetas y Tickets</h1>
+      <p class="text-slate-400 text-lg">Guía rápida para integrar el motor SAE.STUDIO en tus flujos de logística y punto de venta.</p>
+    </header>
+
+    <div class="space-y-12">
+      <!-- Architecture -->
+      <section>
+        <h2 class="text-2xl font-semibold text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold">01</span>
+          Arquitectura Unificada
+        </h2>
+        <div class="prose prose-invert max-w-none text-slate-300">
+          <p>
+            SAE.STUDIO es un motor híbrido. A diferencia de otros editores, permite gestionar tanto <strong>Etiquetado Industrial</strong> (formatos fijos como 4x6", 2x1") como <strong>Tickets de Punto de Venta</strong> (rollos continuos de 80mm/58mm).
+          </p>
+          <p>
+            El servicio <code>SAE.STUDIO.Api</code> escucha en el puerto local <code>5117</code> y procesa ambos tipos de documentos de forma nativa.
+          </p>
+        </div>
+      </section>
+
+      <!-- API Integration -->
+      <section>
+        <h2 class="text-2xl font-semibold text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm font-bold">02</span>
+          Integración vía API JSON
+        </h2>
+        <div class="space-y-6">
+          <p class="text-slate-300">Interactúa con el servicio enviando un <code>POST</code> a sus endpoints correspondientes, enviando el XML de la plantilla y los datos a inyectar.</p>
+          
+          <!-- Etiquetas -->
+          <div class="bg-slate-900/50 rounded-xl p-6 border border-white/5 font-mono text-sm overflow-x-auto">
+            <h3 class="text-white font-sans text-sm font-semibold mb-3">Imprimir Etiqueta Industrial (ZPL/EPL)</h3>
+            <pre class="text-emerald-400">POST https://localhost:5117/api/labels/print</pre>
+            <pre class="text-slate-400 mt-4">&#123;
+  "xml": "&lt;SaeLabels&gt;...&lt;/SaeLabels&gt;",
+  "printerName": "Zebra_ZD420",
+  "data": &#123;
+    "CLIENTE": "Alejandro Eskender",
+    "PRODUCTO": "Premium Label v2"
+  &#125;
+&#125;</pre>
+          </div>
+
+          <!-- Tickets -->
+          <div class="bg-slate-900/50 rounded-xl p-6 border border-white/5 font-mono text-sm overflow-x-auto">
+            <h3 class="text-white font-sans text-sm font-semibold mb-3">Imprimir Ticket de Recibo (ESC/POS)</h3>
+            <pre class="text-blue-400">POST https://localhost:5117/api/tickets/print</pre>
+            <pre class="text-slate-400 mt-4">&#123;
+  "xml": "&lt;SaeTickets&gt;&lt;Header&gt;...&lt;/Header&gt;&lt;Body...&gt;&lt;/SaeTickets&gt;",
+  "printerName": "Epson_TM_T20",
+  "data": &#123;
+    "NRO_ORDEN": "100234",
+    "TOTAL": "$150.00"
+  &#125;
+&#125;</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Templates -->
+      <section class="glass p-8 rounded-2xl border border-white/10">
+        <h2 class="text-2xl font-semibold text-white mb-4">Diseñador Visual</h2>
+        <p class="text-slate-400 mb-6">
+          Utiliza el editor de escritorio para crear plantillas <code>.SaeLabels</code> y <code>.SaeTickets</code>. El servicio <code>SAE.STUDIO.Api</code> se encarga de inyectar las variables y convertirlo a comandos nativos.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 bg-white/5 rounded-lg border border-white/5">
+            <h4 class="text-white font-medium mb-1">Inyección de Variables</h4>
+            <p class="text-xs text-slate-500">Mapeo dinámico de datos JSON a campos de la etiqueta.</p>
+          </div>
+          <div class="p-4 bg-white/5 rounded-lg border border-white/5">
+            <h4 class="text-white font-medium mb-1">Soporte Multi-Arquitectura</h4>
+            <p class="text-xs text-slate-500">Compilado nativamente para Windows x64.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reference -->
+      <section>
+        <h2 class="text-2xl font-semibold text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm font-bold">03</span>
+          Referencia de Variables (Tickets)
+        </h2>
+        
+        <div class="space-y-6 text-slate-300">
+          <p>
+            Al diseñar un ticket, puedes utilizar variables en el texto envolviéndolas en <code>$&#123;VARIABLE&#125;</code> (ej: <code>$&#123;CLIENTE&#125;</code>). El motor de renderizado reemplazará estas variables con los valores enviados en el objeto <code>data</code> de la API.
+          </p>
+
+          <div class="bg-slate-900/50 rounded-xl p-6 border border-white/5">
+            <h3 class="text-white font-semibold mb-4 border-b border-white/10 pb-2">Variables Especiales del Sistema</h3>
+            <p class="mb-4 text-sm text-slate-400">Estas variables se procesan automáticamente en el backend sin necesidad de enviarlas en el JSON:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm font-mono text-emerald-300">
+              <div>$&#123;!date&#125; <span class="text-slate-500 text-xs ml-2">// Fecha formato ISO</span></div>
+              <div>$&#123;!time&#125; <span class="text-slate-500 text-xs ml-2">// Hora actual</span></div>
+              <div>$&#123;!datetime&#125; <span class="text-slate-500 text-xs ml-2">// Fecha y Hora</span></div>
+              <div>$&#123;!dayname&#125; <span class="text-slate-500 text-xs ml-2">// Nombre del día</span></div>
+              <div>$&#123;!weekmonth&#125; <span class="text-slate-500 text-xs ml-2">// Semana del mes</span></div>
+              <div>$&#123;!weekyear&#125; <span class="text-slate-500 text-xs ml-2">// Semana del año</span></div>
+              <div>$&#123;!year&#125; <span class="text-slate-500 text-xs ml-2">// Año (YYYY)</span></div>
+              <div>$&#123;!month&#125; <span class="text-slate-500 text-xs ml-2">// Mes (MM)</span></div>
+              <div>$&#123;!day&#125; <span class="text-slate-500 text-xs ml-2">// Día (DD)</span></div>
+              <div>$&#123;!date:dd/MM/yy&#125; <span class="text-slate-500 text-xs ml-2">// Extensible</span></div>
+            </div>
+            <p class="mt-4 text-xs text-slate-500">También compatibles con tags heredados: $&#123;DATE&#125;, $&#123;TIME&#125;, $&#123;NOW&#125;, $&#123;YEAR&#125;, $&#123;MONTH&#125;, $&#123;DAY&#125;.</p>
+          </div>
+
+          <div class="bg-slate-900/50 rounded-xl p-6 border border-white/5">
+            <h3 class="text-white font-semibold mb-4 border-b border-white/10 pb-2">Comandos en Bloques</h3>
+            <p class="mb-4 text-sm text-slate-400">La estructura XML (<code>.SaeTickets</code>) soporta múltiples bloques funcionales:</p>
+            <ul class="space-y-2 text-sm">
+               <li><code class="text-emerald-400">&lt;TextBlock&gt;</code>: Texto simple o con variables. Soporta <code>align</code>, <code>bold</code>, y tamaños.</li>
+               <li><code class="text-emerald-400">&lt;SepBlock&gt;</code>: Dibuja una línea separadora usando un carácter (ej: <code>------</code>).</li>
+               <li><code class="text-emerald-400">&lt;TotalBlock&gt;</code>: Renderiza a dos columnas (Etiqueta a la izq., Valor a la der.).</li>
+               <li><code class="text-emerald-400">&lt;QrBlock&gt;</code>: Imprime un código QR dinámico basado en las variables dadas.</li>
+               <li><code class="text-emerald-400">&lt;EachBlock&gt;</code>: Itera sobre una lista de objetos en el JSON (ideal para productos/líneas de la orden).</li>
+               <li><code class="text-emerald-400">&lt;IfBlock&gt; / &lt;IfelseBlock&gt;</code>: Muestra contenido condicionalmente evaluando una variable booleana del JSON.</li>
+               <li><code class="text-emerald-400">&lt;ActionBlock&gt;</code>: Envía comandos de hardware al ticket (<code>cut</code> para corte, <code>beep</code>, o <code>open-drawer</code>).</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="mt-20 pt-8 border-t border-white/5 text-center">
+      <p class="text-slate-400 text-sm mb-2">&copy; {new Date().getFullYear()} EskenderDev. - SAE System All rights reserved.</p>
+      <p class="text-slate-500 text-sm">¿Necesitas ayuda técnica? Visita el <a href="https://github.com/EskenderDev/SAE.STUDIO.APP/issues" class="text-emerald-400 hover:underline">repositorio en GitHub</a>.</p>
+    </footer>
+  </main>
+</Layout>

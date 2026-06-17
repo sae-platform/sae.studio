@@ -1,0 +1,31 @@
+<saetickets version="1.0">
+  <setup width="48"/>
+  <commands>
+    <text align="center" bold="true" size="large">SAE POS</text>
+    <text align="center" bold="true" size="medium">INFORME X</text>
+    <text align="center">Corte Parcial — No Fiscal</text>
+    <separator char="="/>
+    <text>Caja: ${CAJA}</text>
+    <text>Cajero: ${CAJERO}</text>
+    <text>Sesion: ${SESION}</text>
+    <text>Fecha: ${!DATE} ${!TIME}</text>
+    <separator char="-"/>
+    <text bold="true" align="center">RESUMEN DE CAJA</text>
+    <separator char="-"/>
+    <total label="Apertura" value="${APERTURA}" align="left"/>
+    <total label="Ingresos" value="${INGRESOS}" align="left"/>
+    <total label="Egresos" value="${EGRESOS}" align="left"/>
+    <separator char="-"/>
+    <total label="Esperado" value="${ESPERADO}" bold="true" align="left"/>
+    <text>Movimientos: ${MOVIMIENTOS}</text>
+    <separator char="-"/>
+    <text bold="true" align="center">METODOS DE PAGO</text>
+    <each listVar="METODOS" header="true">
+      <column field="NOMBRE" label="Metodo" width="22"/>
+      <column field="MONTO" label="Monto" width="auto" align="right"/>
+    </each>
+    <separator char="="/>
+    <feed lines="3"/>
+    <cut/>
+  </commands>
+</saetickets>

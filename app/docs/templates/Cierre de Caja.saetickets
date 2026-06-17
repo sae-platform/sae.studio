@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<saetickets version="1.0">
+  <setup width="42" printers=""/>
+  <commands>
+    <!-- ═══ Encabezado ═══ -->
+    <text align="center" bold="true" size="large">**SAE POS**</text>
+    <text align="center" bold="true" size="medium">##CIERRE DE CAJA##</text>
+    <separator char="="/>
+
+    <!-- ═══ Info del cierre ═══ -->
+    <text align="left">Cajero: ${CAJERO}</text>
+    <text align="left">Caja: ${CAJA}    Turno: ${TURNO}</text>
+    <text align="left">Fecha: ${!date} ${!time}</text>
+    <separator char="-"/>
+
+    <!-- ═══ Totales ═══ -->
+    <text align="left">Efectivo:      ${EFECTIVO}</text>
+    <text align="left">Tarjeta:       ${TARJETA}</text>
+    <text align="left">Transferencia: ${TRANSFERENCIA}</text>
+    <text align="left">Otros:         ${OTROS}</text>
+    <separator char="-"/>
+    <total label="TOTAL VENTAS" value="${TOTAL_VENTAS}" bold="true" align="left"/>
+    <separator char="="/>
+
+    <!-- ═══ Resumen de impuestos ═══ -->
+    <text align="center" bold="true">##IMPUESTOS##</text>
+    <separator char="-"/>
+    <text align="left">IVA (13%):     ${IVA}</text>
+    <text align="left">Servicio (10%):${SERVICIO}</text>
+    <separator char="-"/>
+    <total label="TOTAL IMPUESTOS" value="${TOTAL_IMPUESTOS}" bold="true" align="left"/>
+    <separator char="="/>
+    <feed lines="3"/>
+    <cut/>
+  </commands>
+</saetickets>

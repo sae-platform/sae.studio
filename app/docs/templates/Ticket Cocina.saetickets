@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<saetickets version="1.0">
+  <setup width="42" printers=""/>
+  <commands>
+    <!-- ═══ Encabezado ═══ -->
+    <text align="center" bold="true" size="large">**SAE POS**</text>
+    <text align="center" bold="true" size="medium">##COCINA##</text>
+    <separator char="="/>
+
+    <!-- ═══ Info de la orden ═══ -->
+    <text align="left">Mesa: ${MESA}</text>
+    <text align="left">Hora: ${!time} ${!date}</text>
+    <if expr="${PAX}" align="left">P${PAX} ${GUEST_NAME}</if>
+    <if expr="${KITCHEN_TARGET}" align="left">Estación: ${KITCHEN_TARGET}</if>
+    <separator char="="/>
+
+    <!-- ═══ Detalle del ítem ═══ -->
+    <text align="center" bold="true" size="large">${ITEM_NAME}</text>
+    <text align="left">Cant: ${QTY}</text>
+    <if expr="${NOTAS}" align="left">Notas: ${NOTAS}</if>
+    <separator char="="/>
+    <feed lines="2"/>
+    <cut/>
+  </commands>
+</saetickets>

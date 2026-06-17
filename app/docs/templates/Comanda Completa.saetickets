@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<saetickets version="1.0">
+  <setup width="42" printers="Cocina"/>
+  <commands>
+    <!-- ═══ Encabezado ═══ -->
+    <text align="center" bold="true" size="large">**SAE POS**</text>
+    <text align="center" bold="true" size="medium">##COMANDA##</text>
+    <separator char="="/>
+
+    <!-- ═══ Mesa e info ═══ -->
+    <text align="left">Mesa: ${MESA}</text>
+    <text align="left">Pax: ${PAX}    Hora: ${!time} ${!date}</text>
+    <separator char="="/>
+
+    <!-- ═══ Items agrupados por persona ═══ -->
+    <each listVar="GUEST_ITEMS" header="false" align="left">
+      <column field="DESC" label="Item" width="auto" align="left"/>
+    </each>
+
+    <separator char="="/>
+    <total label="TOTAL" value="${TOTAL}" bold="true" extraBold="true" align="left"/>
+    <separator char="="/>
+    <feed lines="2"/>
+    <cut/>
+  </commands>
+</saetickets>
