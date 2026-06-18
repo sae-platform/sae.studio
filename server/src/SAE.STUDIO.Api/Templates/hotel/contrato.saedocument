@@ -1,0 +1,44 @@
+<saedocument version="2.0">
+  <page width="210" height="297" unit="mm" orientation="portrait" marginTop="15" marginBottom="15" marginLeft="15" marginRight="15">
+    <header>
+      <text size="20" bold="true" align="center">${!EMPRESA}</text>
+      <spacer height="5"/>
+      <line/>
+      <spacer height="3"/>
+      <text size="16" bold="true" align="center">CONTRATO DE SERVICIOS</text>
+      <text size="10" align="center">#${NUMERO}</text>
+      <spacer height="10"/>
+    </header>
+    <body>
+      <text size="10" bold="true">Entre:</text>
+      <text size="10">${!EMPRESA}, cédula jurídica ${!NIT}, representada por ${REPRESENTANTE}</text>
+      <spacer height="5"/>
+      <text size="10" bold="true">Y:</text>
+      <text size="10">${CLIENTE_NOMBRE}, cédula ${CLIENTE_CEDULA}</text>
+      <spacer height="5"/>
+      <text size="10" bold="true">Objeto del contrato:</text>
+      <text size="9">${OBJETO}</text>
+      <spacer height="5"/>
+      <text size="10" bold="true">Condiciones:</text>
+      <text size="9">${CONDICIONES}</text>
+      <spacer height="5"/>
+      <text size="10" bold="true">Monto:</text>
+      <text size="10">${MONTO}</text>
+      <spacer height="5"/>
+      <text size="10" bold="true">Vigencia:</text>
+      <text size="9">Desde ${FECHA_INICIO} hasta ${FECHA_FIN}</text>
+      <spacer height="10"/>
+      <text size="10" bold="true" align="center">Firmas</text>
+      <spacer height="20"/>
+      <table source="FIRMAS" showHeader="false">
+        <column field="PARTE" header="" width="*" align="center"/>
+        <column field="FIRMA" header="" width="*" align="center"/>
+      </table>
+    </body>
+    <footer>
+      <spacer height="30"/>
+      <line/>
+      <text size="7" align="center">Documento generado el ${!DATE} ${!TIME}</text>
+    </footer>
+  </page>
+</saedocument>

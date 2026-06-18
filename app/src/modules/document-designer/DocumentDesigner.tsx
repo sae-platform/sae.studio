@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Eye, Code, FileText, Undo, Redo, ZoomIn, ZoomOut, Layers, Printer, Download, LayoutGrid, Database, GripHorizontal } from "lucide-react";
 
 import type { SaeDocumentModel } from "@/modules/document-engine/models/document";
@@ -72,7 +72,18 @@ export function DocumentDesigner() {
   // Parse initial model
   const initialModel: SaeDocumentModel = parseXml(documentXml) ?? createDocument("A4");
 
-  const { state: doc, set: setDoc, update: updateDoc, undo, redo, canUndo: hasUndo, canRedo: hasRedo } = useUndoStack(initialModel);
+  const { state: doc, set: setDoc, update: updateDoc, undo, redo, canUndo: hasUndo, canRedo: hasRedo, reset: resetStack } = useUndoStack(initialModel);
+
+  // Track whether XML changes originate internally (designer edits)
+  const internalChange = useRef(false);
+
+  // Reset undo stack when external XML changes (e.g., loaded from template gallery)
+  useEffect(() => {
+    if (internalChange.current) { internalChange.current = false; return; }
+    const model = parseXml(documentXml) ?? createDocument("A4");
+    resetStack(model);
+    setXmlText(documentXml);
+  }, [documentXml]);
 
   const [selectedId, setSelectedId]     = useState<string | null>(null);
   const [pageIndex, setPageIndex]       = useState(0);
@@ -112,10 +123,15 @@ export function DocumentDesigner() {
   const page: PageDef | undefined = doc.pages[pageIndex];
 
   // ── Sync to store whenever doc changes ───────────────────
+  // Sync document model → XML store (handles both internal and external changes)
+  useEffect(() => {
+    internalChange.current = true;
+    setDocumentXml(serializeXml(doc));
+  }, [doc]);
+
   const syncDoc = useCallback((next: SaeDocumentModel) => {
     setDoc(next);
-    setDocumentXml(serializeXml(next));
-  }, [setDoc, setDocumentXml]);
+  }, [setDoc]);
 
   // ── Selected element lookup ──────────────────────────────
   const selectedElement = selectedId
@@ -220,10 +236,9 @@ export function DocumentDesigner() {
         };
       }
 
-      setDocumentXml(serializeXml(next));
       return next;
     });
-  }, [pageIndex, updateDoc, setDocumentXml]);
+  }, [pageIndex, updateDoc]);
 
   // ── Element property change ──────────────────────────────
   const handleElementChange = useCallback((patch: Partial<DocumentElement>) => {

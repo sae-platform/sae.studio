@@ -41,9 +41,13 @@ public sealed class SaeLabelsXmlValidator : ISaeLabelsXmlValidator
         if (File.Exists(ticketsPath))
             _schemas.Add(null, ticketsPath);
 
+        var documentPath = Path.Combine(schemasDir, "saedocument.xsd");
+        if (File.Exists(documentPath))
+            _schemas.Add(null, documentPath);
+
         if (_schemas.Count == 0)
         {
-            throw new FileNotFoundException($"Se encontró la carpeta Schemas en '{schemasDir}' pero no contiene archivos XSD válidos (SaeLabels.xsd / saetickets.xsd).");
+            throw new FileNotFoundException($"Se encontró la carpeta Schemas en '{schemasDir}' pero no contiene archivos XSD válidos (SaeLabels.xsd / saetickets.xsd / saedocument.xsd).");
         }
     }
 

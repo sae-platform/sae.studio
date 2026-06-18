@@ -67,6 +67,7 @@ public sealed class EditorTemplateDto
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Kind { get; set; } = "sae";
+    public string Category { get; set; } = "restaurant";
     public string Icon { get; set; } = "📄";
     public string Description { get; set; } = string.Empty;
     public string Xml { get; set; } = string.Empty;

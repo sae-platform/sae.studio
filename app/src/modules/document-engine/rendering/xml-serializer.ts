@@ -5,6 +5,7 @@
 
 import type { SaeDocumentModel, DocumentMetadata, DataSourceDef, AssetDef, VariableDef } from "../models/document";
 import type { PageDef, PageUnit } from "../models/page";
+import { PAGE_PRESETS } from "../models/page";
 import type { BandDef, BandType } from "../models/band";
 import type { LayerDef } from "../models/layer";
 import type { DocumentElement, TableColumnDef } from "../models/elements";
@@ -359,6 +360,148 @@ function parseTheme(el: Element | null): DocumentTheme | undefined {
   };
 }
 
+// ── Runtime format parser ─────────────────────────────────
+
+function parseRuntimeDocument(root: Element): SaeDocumentModel {
+  const setup = children(root, "setup")[0] ?? null;
+  const pageSize = attr(setup!, "pageSize") || "A4";
+  const orientation = attr(setup!, "orientation") || "portrait";
+  const marginTop = attrNum(setup!, "marginTop", 15);
+  const marginBottom = attrNum(setup!, "marginBottom", 15);
+  const marginLeft = attrNum(setup!, "marginLeft", 12);
+  const marginRight = attrNum(setup!, "marginRight", 12);
+
+  // Resolve page dimensions from preset name or parse "WxH" string
+  let width = 210, height = 297;
+  const preset = PAGE_PRESETS[pageSize];
+  if (preset) {
+    width = preset.width;
+    height = preset.height;
+  } else {
+    const match = pageSize.match(/^(\d+\.?\d*)x(\d+\.?\d*)$/i);
+    if (match) { width = parseFloat(match[1]); height = parseFloat(match[2]); }
+  }
+
+  // Convert runtime elements to design-time elements
+  function parseRuntimeElements(el: Element): DocumentElement[] {
+    const elements: DocumentElement[] = [];
+    let y = 0;
+    for (const child of Array.from(el.children)) {
+      const tag = child.tagName.toLowerCase();
+      if (tag === "text") {
+        const content = child.textContent?.trim() ?? "";
+        elements.push({
+          id: crypto.randomUUID(),
+          type: "text",
+          x: 10, y,
+          width: width - marginLeft - marginRight - 20,
+          height: attrNum(child, "height", 8),
+          content,
+          font: "Arial",
+          size: attrNum(child, "size", 10),
+          bold: attrBool(child, "bold"),
+          align: (attr(child, "align") as any) || "left",
+          color: attr(child, "color") || "#1e293b",
+        });
+        y += 5 + (attrNum(child, "size", 10) * 0.4);
+      } else if (tag === "spacer") {
+        y += attrNum(child, "height", 5);
+      } else if (tag === "line") {
+        elements.push({
+          id: crypto.randomUUID(),
+          type: "line",
+          x: 10, y, x1: 10, y1: y,
+          x2: width - marginLeft - marginRight - 10, y2: y,
+          width: width - marginLeft - marginRight - 20,
+          height: 2,
+          color: "#cbd5e1",
+          lineWidth: 1,
+        });
+        y += 3;
+      } else if (tag === "table") {
+        const cols = Array.from(child.children).filter(c => c.tagName.toLowerCase() === "column").map(c => ({
+          field: attr(c, "field") || "",
+          header: attr(c, "header") || "",
+          width: attr(c, "width") || undefined,
+          align: (attr(c, "align") as any) || "left",
+        }));
+        elements.push({
+          id: crypto.randomUUID(),
+          type: "table",
+          x: 10, y,
+          width: width - marginLeft - marginRight - 20,
+          height: 40,
+          source: attr(child, "source") || "ITEMS",
+          columns: cols,
+          showHeader: attrBool(child, "showHeader", true),
+        });
+        y += 45;
+      } else if (tag === "image") {
+        elements.push({
+          id: crypto.randomUUID(),
+          type: "image",
+          x: 10, y,
+          width: attrNum(child, "width", 30),
+          height: attrNum(child, "height", 30),
+          source: attr(child, "source") || "logo.png",
+        });
+        y += attrNum(child, "height", 30) + 5;
+      } else if (tag === "qr") {
+        const sz = attrNum(child, "size", 30);
+        elements.push({
+          id: crypto.randomUUID(),
+          type: "qr",
+          x: 10, y,
+          width: sz, height: sz,
+          size: sz,
+          value: attr(child, "content") || child.textContent?.trim() || "",
+        });
+        y += sz + 5;
+      } else if (tag === "total" || tag === "subtotal") {
+        elements.push({
+          id: crypto.randomUUID(),
+          type: tag as any,
+          x: 10, y,
+          width: width - marginLeft - marginRight - 20,
+          height: 8,
+          label: attr(child, "label") || "",
+          field: (attr(child, "value") || "").replace(/^\$\{/, "").replace(/\}$/, ""),
+          bold: attrBool(child, "bold", tag === "total"),
+          align: (attr(child, "align") as any) || "right",
+          size: attrNum(child, "size", 10),
+        });
+        y += 10;
+      }
+    }
+    return elements;
+  }
+
+  const headerElements = parseRuntimeElements(children(root, "header")[0] ?? root);
+  const bodyElements   = parseRuntimeElements(children(root, "body")[0] ?? root);
+  const footerElements = parseRuntimeElements(children(root, "footer")[0] ?? root);
+
+  const page: PageDef = {
+    id: crypto.randomUUID(),
+    width, height,
+    unit: "mm",
+    orientation: orientation as any,
+    marginTop, marginBottom, marginLeft, marginRight,
+    layers: [{ id: "default", name: "Content", visible: true, locked: false, zIndex: 0 }],
+    header: { id: crypto.randomUUID(), type: "header", height: Math.max(40, headerElements.length * 15), canGrow: false, canShrink: false, elements: headerElements },
+    body:   { id: crypto.randomUUID(), type: "body",   height: Math.max(200, bodyElements.length * 15), canGrow: true, canShrink: false, elements: bodyElements },
+    footer: { id: crypto.randomUUID(), type: "footer", height: Math.max(35, footerElements.length * 15), canGrow: false, canShrink: false, elements: footerElements },
+  };
+
+  return {
+    version: attr(root, "version") || "2.0",
+    metadata: { title: attr(setup!, "pageSize") || "Documento", version: "2.0" },
+    datasources: [],
+    assets: [],
+    variables: [],
+    pages: [page],
+  };
+}
+
 export function parseXml(xml: string): SaeDocumentModel | null {
   try {
     const parser = new DOMParser();
@@ -367,15 +510,22 @@ export function parseXml(xml: string): SaeDocumentModel | null {
     const root = dom.documentElement;
     if (!root || root.tagName !== "saedocument") return null;
 
-    return {
-      version: attr(root, "version") || "2.0",
-      metadata: parseMetadata(children(root, "metadata")[0] ?? null),
-      datasources: parseDatasources(children(root, "datasources")[0] ?? null),
-      assets: parseAssets(children(root, "assets")[0] ?? null),
-      variables: parseVariables(children(root, "variables")[0] ?? null),
-      pages: children(root, "page").map(parsePage),
-      embeddedTheme: parseTheme(children(root, "theme")[0] ?? null),
-    };
+    const designPages = children(root, "page");
+    if (designPages.length > 0) {
+      // Design-time format: <page> elements
+      return {
+        version: attr(root, "version") || "2.0",
+        metadata: parseMetadata(children(root, "metadata")[0] ?? null),
+        datasources: parseDatasources(children(root, "datasources")[0] ?? null),
+        assets: parseAssets(children(root, "assets")[0] ?? null),
+        variables: parseVariables(children(root, "variables")[0] ?? null),
+        pages: designPages.map(parsePage),
+        embeddedTheme: parseTheme(children(root, "theme")[0] ?? null),
+      };
+    }
+
+    // Runtime format: <setup> + flat <header>/<body>/<footer>
+    return parseRuntimeDocument(root);
   } catch {
     return null;
   }

@@ -26,7 +26,7 @@ export function ElementRenderer({ element, scale, rendered }: ElementRendererPro
           fontStyle: el.italic ? "italic" : "normal",
           textDecoration: el.underline ? "underline" : "none",
           textAlign: el.align ?? "left",
-          color: el.color ?? "inherit",
+          color: el.color ?? "#1e293b",
           wordBreak: "break-word",
           overflow: "hidden",
           whiteSpace: "pre-wrap",

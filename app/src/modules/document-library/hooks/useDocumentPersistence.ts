@@ -6,8 +6,10 @@ import type { EditorDocumentSummary } from "@/lib/api/client";
 interface FileHandles {
   label: FileSystemFileHandle | null;
   ticket: FileSystemFileHandle | null;
+  document: FileSystemFileHandle | null;
   setLabel: (h: FileSystemFileHandle | null) => void;
   setTicket: (h: FileSystemFileHandle | null) => void;
+  setDocument: (h: FileSystemFileHandle | null) => void;
 }
 
 interface EditorApi {
@@ -28,6 +30,7 @@ interface UseDocumentPersistenceOptions {
 
 const SAMPLE_LABEL_XML = `<saelabels version="1.0"><template brand="SAE" description="Demo" part="P-1" size="custom"><label_rectangle width_pt="144" height_pt="72" round_pt="0" x_waste_pt="0" y_waste_pt="0" /><layout dx_pt="0" dy_pt="0" nx="1" ny="1" x0_pt="0" y0_pt="0" /></template><objects /><variables /></saelabels>`;
 const DEFAULT_TICKET_XML = `<?xml version="1.0" encoding="utf-8"?><saetickets version="1.0"><setup width="42"/><commands/></saetickets>`;
+const DEFAULT_DOCUMENT_XML = `<saedocument version="1.0"><metadata/><datasources/><assets/><page width="210" height="297" unit="mm"><header><image source="logo.png" x="10" y="10" width="28" height="28"/><text x="45" y="14" width="120" height="10" font="Arial" size="18" bold="true">Factura Electrónica</text><text x="45" y="26" width="90" height="6" font="Arial" size="9">Consecutivo: \${Factura.Consecutivo}</text><line x1="10" y1="42" x2="200" y2="42"/></header><body><text x="10" y="52" width="90" height="6" font="Arial" size="10" bold="true">Cliente: \${Cliente.Nombre}</text><table source="Factura.Detalles"><column field="Cantidad" header="Cant" width="15"/><column field="Descripcion" header="Descripción" width="90"/><column field="Precio" header="Precio" width="30"/><column field="Total" header="Total" width="30"/></table><text x="140" y="205" width="55" height="6" font="Arial" size="10" bold="true" align="right">TOTAL: \${Factura.Total}</text></body><footer><qr value="\${Factura.Clave}" x="10" y="250" size="28"/><text x="45" y="255" width="145" height="6" font="Arial" size="8">Clave: \${Factura.Clave}</text></footer></page></saedocument>`;
 
 interface PersistenceFns {
   saveDoc(): Promise<void>;
@@ -51,6 +54,9 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
   const ticketXml = useWorkspaceStore((s) => s.ticketXml);
   const ticketDocId = useWorkspaceStore((s) => s.ticketDocId);
   const ticketDocName = useWorkspaceStore((s) => s.ticketDocName);
+  const documentXml = useWorkspaceStore((s) => s.documentXml);
+  const documentDocId = useWorkspaceStore((s) => s.documentDocId);
+  const documentDocName = useWorkspaceStore((s) => s.documentDocName);
 
   // Store accessor (non-reactive, for use in callbacks)
   const getStore = useWorkspaceStore.getState;
@@ -69,7 +75,11 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
   const fns = useCallback((): PersistenceFns => {
     function resetDoc(kind: DocKind) {
       const s = getStore();
-      if (kind === "saetickets") {
+      if (kind === "saedocument") {
+        s.setDocumentDocId("");
+        s.setDocumentDocName("Nuevo Documento");
+        s.setDocumentXml(DEFAULT_DOCUMENT_XML);
+      } else if (kind === "saetickets") {
         s.setTicketDocId("");
         s.setTicketDocName("Nuevo Tiquete");
         s.setTicketXml(DEFAULT_TICKET_XML);
@@ -85,17 +95,20 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
       const s = getStore();
       const ctx = s.docKind === "saetickets"
         ? { xml: s.ticketXml, docId: s.ticketDocId, docName: s.ticketDocName }
+        : s.docKind === "saedocument"
+        ? { xml: s.documentXml, docId: s.documentDocId, docName: s.documentDocName }
         : { xml: s.labelXml, docId: s.labelDocId, docName: s.labelDocName };
 
       if (typeof window !== "undefined" && "showSaveFilePicker" in window) {
         try {
-          const ext = s.docKind === "saetickets" ? ".saetickets" : ".saelabels";
-          const desc = s.docKind === "saetickets" ? "SAE Ticket" : "SAE Label";
+          const ext = s.docKind === "saetickets" ? ".saeticket" : s.docKind === "saedocument" ? ".saedocument" : ".saelabel";
+          const desc = s.docKind === "saetickets" ? "SAE Ticket" : s.docKind === "saedocument" ? "SAE Document" : "SAE Label";
           const handle = await (window as any).showSaveFilePicker({
             suggestedName: (ctx.docName || "documento") + ext,
             types: [{ description: desc, accept: { "application/xml": [ext] } }],
           });
-          if (s.docKind === "saetickets") fileHandles.setTicket(handle);
+          if (s.docKind === "saedocument") fileHandles.setDocument(handle);
+          else if (s.docKind === "saetickets") fileHandles.setTicket(handle);
           else fileHandles.setLabel(handle);
 
           const writable = await handle.createWritable();
@@ -103,8 +116,9 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
           await writable.close();
 
           const file = await handle.getFile();
-          const newName = file.name.replace(/\.(saelabels|saetickets|xml)$/i, "");
-          if (s.docKind === "saetickets") s.setTicketDocName(newName);
+          const newName = file.name.replace(/\.(saelabel|saeticket|saedocument|xml)$/i, "");
+          if (s.docKind === "saedocument") s.setDocumentDocName(newName);
+          else if (s.docKind === "saetickets") s.setTicketDocName(newName);
           else s.setLabelDocName(newName);
 
           s.setSaveStatus("saved");
@@ -112,7 +126,8 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
           try {
             const res = await editorApi.saveDocument({ id: ctx.docId || undefined, name: ctx.docName, kind: s.docKind, xml: ctx.xml });
             if (!ctx.docId) {
-              if (s.docKind === "saetickets") s.setTicketDocId(res.id);
+              if (s.docKind === "saedocument") s.setDocumentDocId(res.id);
+              else if (s.docKind === "saetickets") s.setTicketDocId(res.id);
               else s.setLabelDocId(res.id);
             }
             editorApi.listDocuments().then(setDocuments).catch(() => {});
@@ -144,8 +159,10 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
       s.setSaveStatus("saving");
       const ctx = s.docKind === "saetickets"
         ? { xml: s.ticketXml, docId: s.ticketDocId, docName: s.ticketDocName }
+        : s.docKind === "saedocument"
+        ? { xml: s.documentXml, docId: s.documentDocId, docName: s.documentDocName }
         : { xml: s.labelXml, docId: s.labelDocId, docName: s.labelDocName };
-      const fh = s.docKind === "saetickets" ? fileHandles.ticket : fileHandles.label;
+      const fh = s.docKind === "saedocument" ? fileHandles.document : s.docKind === "saetickets" ? fileHandles.ticket : fileHandles.label;
 
       if (!fh) { await saveAsDoc(); return; }
 
@@ -156,7 +173,8 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
 
         const res = await editorApi.saveDocument({ id: ctx.docId || undefined, name: ctx.docName, kind: s.docKind, xml: ctx.xml });
         if (!ctx.docId) {
-          if (s.docKind === "saetickets") s.setTicketDocId(res.id);
+          if (s.docKind === "saedocument") s.setDocumentDocId(res.id);
+          else if (s.docKind === "saetickets") s.setTicketDocId(res.id);
           else s.setLabelDocId(res.id);
         }
         s.setSaveStatus("saved");
@@ -172,10 +190,10 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
       try {
         await editorApi.deleteDocument(id);
         const s = getStore();
-        const ctx = s.docKind === "saetickets"
-          ? { docId: s.ticketDocId }
-          : { docId: s.labelDocId };
-        if (ctx.docId === id) resetDoc(s.docKind);
+        const docId = s.docKind === "saetickets"
+          ? s.ticketDocId : s.docKind === "saedocument"
+          ? s.documentDocId : s.labelDocId;
+        if (docId === id) resetDoc(s.docKind);
         editorApi.listDocuments().then(setDocuments).catch(() => {});
       } catch {
         setError("Error al eliminar.");
@@ -198,7 +216,10 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
         const kind = full.kind as DocKind;
         const s = getStore();
         s.setDocKind(kind);
-        if (kind === "saetickets") {
+        if (kind === "saedocument") {
+          s.setDocumentDocId(full.id); s.setDocumentDocName(full.name); s.setDocumentXml(full.xml);
+          fileHandles.setDocument(null);
+        } else if (kind === "saetickets") {
           s.setTicketDocId(full.id); s.setTicketDocName(full.name); s.setTicketXml(full.xml);
           fileHandles.setTicket(null);
         } else {
@@ -247,6 +268,21 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
     }, 2000);
     return () => clearTimeout(timer);
   }, [ticketXml, ticketDocId, ticketDocName, autoSaveEnabled, editorApi, getStore]);
+
+  // Auto-save Document
+  useEffect(() => {
+    if (!autoSaveEnabled || !documentDocId) return;
+    const s = getStore();
+    s.setSaveStatus("modified");
+    const timer = setTimeout(async () => {
+      try {
+        getStore().setSaveStatus("saving");
+        await editorApi.saveDocument({ id: documentDocId, name: documentDocName, kind: "saedocument", xml: documentXml });
+        getStore().setSaveStatus("saved");
+      } catch { getStore().setSaveStatus("error"); }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [documentXml, documentDocId, documentDocName, autoSaveEnabled, editorApi, getStore]);
 
   return fnRef.current!;
 }

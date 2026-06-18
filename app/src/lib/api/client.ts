@@ -64,14 +64,14 @@ export type EditorElementDefinition = {
 export type EditorDocumentSummary = {
   id: string;
   name: string;
-  kind: "sae" | "glabels" | "saetickets";
+  kind: "sae" | "glabels" | "saetickets" | "saedocument";
   updatedAtUtc: string;
 };
 
 export type EditorDocument = {
   id: string;
   name: string;
-  kind: "sae" | "glabels" | "saetickets";
+  kind: "sae" | "glabels" | "saetickets" | "saedocument";
   xml: string;
   createdAtUtc: string;
   updatedAtUtc: string;
@@ -98,7 +98,8 @@ export type UpsertEditorElementPayload = {
 export type EditorTemplate = {
   id: string;
   name: string;
-  kind: "sae" | "glabels" | "saetickets";
+  kind: "sae" | "glabels" | "saetickets" | "saedocument";
+  category: string;
   icon: string;
   description: string;
   xml: string;
@@ -109,7 +110,7 @@ export type EditorTemplate = {
 export type UpsertEditorTemplatePayload = {
   id?: string;
   name: string;
-  kind: "sae" | "saetickets";
+  kind: "sae" | "saetickets" | "saedocument";
   icon?: string;
   description?: string;
   xml: string;

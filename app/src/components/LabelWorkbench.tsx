@@ -186,8 +186,11 @@ export default function LabelWorkbench() {
 
   const [labelFileHandle, setLabelFileHandle] = useState<FileSystemFileHandle | null>(null);
   const [ticketFileHandle, setTicketFileHandle] = useState<FileSystemFileHandle | null>(null);
-  const fileHandle = docKind === 'saetickets' ? ticketFileHandle : labelFileHandle;
-  const setFileHandle = docKind === 'saetickets' ? setTicketFileHandle : setLabelFileHandle;
+  const [documentFileHandle, setDocumentFileHandle] = useState<FileSystemFileHandle | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const fileHandle = docKind === 'saetickets' ? ticketFileHandle : docKind === 'saedocument' ? documentFileHandle : labelFileHandle;
+  const setFileHandle = docKind === 'saetickets' ? setTicketFileHandle : docKind === 'saedocument' ? setDocumentFileHandle : setLabelFileHandle;
 
   const [action, setAction] = useState<Action>("parse");
   const [result, setResult] = useState("");
@@ -300,8 +303,8 @@ export default function LabelWorkbench() {
   } = useDocumentPersistence({
     editorApi: editorApi as any,
     fileHandles: {
-      label: labelFileHandle, ticket: ticketFileHandle,
-      setLabel: setLabelFileHandle, setTicket: setTicketFileHandle,
+      label: labelFileHandle, ticket: ticketFileHandle, document: documentFileHandle,
+      setLabel: setLabelFileHandle, setTicket: setTicketFileHandle, setDocument: setDocumentFileHandle,
     },
     setDocuments,
     setError,
@@ -337,8 +340,8 @@ export default function LabelWorkbench() {
       try {
         const [handle] = await (window as any).showOpenFilePicker({
           types: [{
-            description: 'XML Files',
-            accept: { 'application/xml': ['.xml', '.saelabels', '.saetickets'] },
+            description: 'SAE Studio Files',
+            accept: { 'application/xml': ['.xml', '.saelabel', '.saeticket', '.saedocument'] },
           }],
         });
         setFileHandle(handle);
@@ -348,34 +351,43 @@ export default function LabelWorkbench() {
         
         // Infer kind from content or extension
         let kind: DocKind = "sae";
-        if (sanitized.includes("<saetickets") || file.name.endsWith(".saetickets")) kind = "saetickets";
-        else if (sanitized.includes("<saelabels") || file.name.endsWith(".saelabels")) kind = "sae";
+        if (sanitized.includes("<saedocument") || file.name.endsWith(".saedocument")) kind = "saedocument";
+        else if (sanitized.includes("<saetickets") || file.name.endsWith(".saeticket")) kind = "saetickets";
+        else if (sanitized.includes("<saelabels") || file.name.endsWith(".saelabel")) kind = "sae";
         else if (sanitized.includes("<Glabels-document")) kind = "glabels";
-        
+
         setDocKind(kind);
-        
+
         // Contextual updates
-        const cleanName = file.name.replace(/\.(xml|saetickets|saelabels)$/i, "");
-        if (kind === "saetickets") {
+        let resolvedDocId = "";
+        const cleanName = file.name.replace(/\.(xml|saeticket|saelabel|saedocument)$/i, "");
+        if (kind === "saedocument") {
+          setDocumentXml(sanitized);
+          setDocumentDocName(cleanName);
+          setDocumentFileHandle(handle);
+          try {
+            const existing = await editorApi.getDocumentByName(cleanName);
+            if (existing && existing.kind === 'saedocument') resolvedDocId = existing.id;
+          } catch { }
+          setDocumentDocId(resolvedDocId);
+        } else if (kind === "saetickets") {
           setTicketXml(sanitized);
           setTicketDocName(cleanName);
           setTicketFileHandle(handle);
-          // Try to recover ID from library if it exists
           try {
             const existing = await editorApi.getDocumentByName(cleanName);
-            if (existing && existing.kind === 'saetickets') setTicketDocId(existing.id);
-            else setTicketDocId("");
-          } catch { setTicketDocId(""); }
+            if (existing && existing.kind === 'saetickets') resolvedDocId = existing.id;
+          } catch { }
+          setTicketDocId(resolvedDocId);
         } else {
           setLabelXml(sanitized);
           setLabelDocName(cleanName);
           setLabelFileHandle(handle);
-          // Try to recover ID from library if it exists
           try {
             const existing = await editorApi.getDocumentByName(cleanName);
-            if (existing && existing.kind !== 'saetickets') setLabelDocId(existing.id);
-            else setLabelDocId("");
-          } catch { setLabelDocId(""); }
+            if (existing && existing.kind !== 'saetickets' && existing.kind !== 'saedocument') resolvedDocId = existing.id;
+          } catch { }
+          setLabelDocId(resolvedDocId);
         }
         
         setSaveStatus("saved");
@@ -385,11 +397,13 @@ export default function LabelWorkbench() {
         // Auto-sync with backend to get an ID and ensure persistence
         try {
           const res = await editorApi.saveDocument({
+            id: resolvedDocId || undefined,
             name: cleanName,
             kind: kind,
             xml: sanitized
           });
-          if (kind === 'saetickets') setTicketDocId(res.id);
+          if (kind === 'saedocument') setDocumentDocId(res.id);
+          else if (kind === 'saetickets') setTicketDocId(res.id);
           else setLabelDocId(res.id);
           void refreshDocuments();
         } catch (e) {
@@ -748,20 +762,26 @@ export default function LabelWorkbench() {
       
       // Infer kind
       let kind: DocKind = "sae";
-      if (sanitized.includes("<saetickets") || file.name.endsWith(".saetickets")) kind = "saetickets";
-      else if (sanitized.includes("<saelabels") || file.name.endsWith(".saelabels")) kind = "sae";
+      if (sanitized.includes("<saedocument") || file.name.endsWith(".saedocument")) kind = "saedocument";
+      else if (sanitized.includes("<saetickets") || file.name.endsWith(".saeticket")) kind = "saetickets";
+      else if (sanitized.includes("<saelabels") || file.name.endsWith(".saelabel")) kind = "sae";
       else if (sanitized.includes("<Glabels-document")) kind = "glabels";
       
       setDocKind(kind);
 
-      if (kind === "saetickets") {
+      if (kind === "saedocument") {
+        setDocumentXml(sanitized);
+        setDocumentDocName(file.name.replace(/\.(xml|saeticket|saelabel|saedocument)$/i, ""));
+        setDocumentDocId("");
+        setDocumentFileHandle(null);
+      } else if (kind === "saetickets") {
         setTicketXml(sanitized);
-        setTicketDocName(file.name.replace(/\.(xml|saetickets)$/i, ""));
+        setTicketDocName(file.name.replace(/\.(xml|saeticket|saelabel|saedocument)$/i, ""));
         setTicketDocId("");
         setTicketFileHandle(null);
       } else {
         setLabelXml(sanitized);
-        setLabelDocName(file.name.replace(/\.(xml|saelabels)$/i, ""));
+        setLabelDocName(file.name.replace(/\.(xml|saeticket|saelabel|saedocument)$/i, ""));
         setLabelDocId("");
         setLabelFileHandle(null);
       }
@@ -842,7 +862,10 @@ export default function LabelWorkbench() {
           padding: '0 8px', borderBottom: '1px solid var(--border,#e2e8f0)',
           background: 'var(--bg-tabs, #f8fafc)', flexShrink: 0, height: '36px'
         }}>
-          {(['sae', 'saetickets', 'saedocument'] as const).map(k => (
+          {!mounted ? (
+            <div style={{ padding: '0 24px', color: 'var(--muted)', fontSize: '0.82rem', fontWeight: 500 }}>Cargando...</div>
+          ) : (
+            <>{(['sae', 'saetickets', 'saedocument'] as const).map(k => (
               <button key={k} onClick={() => handleSwitchKind(k)}
               className={`designerTab ${docKind === k ? 'active' : ''}`}
               style={{
@@ -867,11 +890,15 @@ export default function LabelWorkbench() {
               )}
               {k === 'saetickets' ? 'Diseñador de Tiquetes' : k === 'saedocument' ? 'Diseñador de Documentos' : 'Diseñador de Etiquetas'}
             </button>
-          ))}
+          ))}</>)}
         </div>
 
         <div className="designerHost" style={{ background: '#fff' }}>
-          {docKind === 'saetickets' ? (
+          {!mounted ? (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "0.9rem" }}>
+              Cargando diseñador...
+            </div>
+          ) : docKind === 'saetickets' ? (
             <TicketDesigner
               initialXml={xml}
               onUpdate={(newXml) => {
@@ -915,18 +942,20 @@ export default function LabelWorkbench() {
         <footer className="studioFooter">
           <div className="footerStatus">
             <span className={`dot ${saveStatus}`} /> 
+            {mounted && (
             <span style={{ fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }} title={saveStatus === "saved" && !fileHandle ? "Usa 'Guardar Como' para crear una copia física en tu computadora." : ""}>
               {saveStatus === "saved" && (fileHandle ? "Guardado (Local y en Nube)" : "Guardado en Memoria (Borrador)")}
               {saveStatus === "saving" && "Guardando..."}
               {saveStatus === "modified" && "Cambios pendientes"}
               {saveStatus === "error" && "Error al guardar"}
             </span>
+            )}
           </div>
 
           <div className="metaStats">
             <div className="metaItem">
               <span className="metaLabel">Documento:</span>
-              <span className="metaValue">{docName || "Sin título"}</span>
+              <span className="metaValue">{mounted ? (docName || "Sin título") : "\u00A0"}</span>
             </div>
             <div className="metaDivider" />
             <div className="metaItem">
@@ -949,6 +978,7 @@ export default function LabelWorkbench() {
           onRefresh={refreshTemplates}
           onSelectTicketTemplate={(t) => { setPendingTemplateXml(t.xml); setNewTicketDraft(p => ({ ...p, name: t.name })); setShowTemplatesGallery(false); setShowNewTicketConfigModal(true); }}
           onSelectLabelTemplate={(t) => { createConfiguredDocument(newDocumentDraft, t.xml); setShowTemplatesGallery(false); }}
+          onSelectDocumentTemplate={(t) => { setDocumentXml(t.xml); setDocumentDocName(t.name); setDocKind("saedocument"); setShowTemplatesGallery(false); }}
           onSelectPreset={(p) => { setNewDocumentDraft({ ...newDocumentDraft, ...p, kind: "sae" } as NewDocumentDraft); setSelectedPresetId(p.id); setShowTemplatesGallery(false); setShowNewConfigModal(true); }}
         />
       )}

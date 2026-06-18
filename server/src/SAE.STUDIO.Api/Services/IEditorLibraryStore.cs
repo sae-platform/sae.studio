@@ -16,6 +16,7 @@ public interface IEditorLibraryStore
 
     IReadOnlyList<EditorTemplateDto> GetTemplates();
     EditorTemplateDto UpsertTemplate(UpsertEditorTemplateRequest request);
+    int ImportFromDirectory(string templatesDirectory);
 
     string? GetSetting(string key);
     void SaveSetting(string key, string value);

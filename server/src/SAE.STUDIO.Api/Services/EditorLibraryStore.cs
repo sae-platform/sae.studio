@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using SAE.STUDIO.Api.Contracts;
+using System.Text;
 
 namespace SAE.STUDIO.Api.Services;
 
@@ -230,7 +231,15 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
                 var existingId = checkCmd.ExecuteScalar();
                 if (existingId != null)
                 {
-                    throw new InvalidDataException($"Ya existe un documento con el nombre '{name}'.");
+                    // If no explicit ID was provided, reuse the existing document's ID (upsert by name)
+                    if (string.IsNullOrWhiteSpace(request.Id))
+                    {
+                        id = existingId.ToString()!;
+                    }
+                    else
+                    {
+                        throw new InvalidDataException($"Ya existe un documento con el nombre '{name}'.");
+                    }
                 }
             }
             using var cmd = cn.CreateCommand();
@@ -292,7 +301,7 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
             using var cn = Open();
             using var cmd = cn.CreateCommand();
             cmd.CommandText = """
-                SELECT id, name, kind, icon, description, xml, created_at_utc, updated_at_utc
+                SELECT id, name, kind, category, icon, description, xml, created_at_utc, updated_at_utc
                 FROM editor_templates
                 ORDER BY kind, name COLLATE NOCASE;
                 """;
@@ -305,11 +314,12 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
                     Id = r.GetString(0),
                     Name = r.GetString(1),
                     Kind = r.GetString(2),
-                    Icon = r.IsDBNull(3) ? "📄" : r.GetString(3),
-                    Description = r.IsDBNull(4) ? "" : r.GetString(4),
-                    Xml = r.GetString(5),
-                    CreatedAtUtc = DateTime.Parse(r.GetString(6), null, System.Globalization.DateTimeStyles.RoundtripKind),
-                    UpdatedAtUtc = DateTime.Parse(r.GetString(7), null, System.Globalization.DateTimeStyles.RoundtripKind)
+                    Category = r.IsDBNull(3) ? "restaurant" : r.GetString(3),
+                    Icon = r.IsDBNull(4) ? "📄" : r.GetString(4),
+                    Description = r.IsDBNull(5) ? "" : r.GetString(5),
+                    Xml = r.GetString(6),
+                    CreatedAtUtc = DateTime.Parse(r.GetString(7), null, System.Globalization.DateTimeStyles.RoundtripKind),
+                    UpdatedAtUtc = DateTime.Parse(r.GetString(8), null, System.Globalization.DateTimeStyles.RoundtripKind)
                 });
             }
             return list;
@@ -342,12 +352,14 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
                 }
             }
             using var cmd = cn.CreateCommand();
+            var cat = (request as dynamic)?.Category as string ?? request.Kind switch { "saedocument" => "retail", "saetickets" => "restaurant", _ => "retail" };
             cmd.CommandText = """
-                INSERT INTO editor_templates (id, name, kind, icon, description, xml, created_at_utc, updated_at_utc)
-                VALUES ($id, $name, $kind, $icon, $desc, $xml, $created, $updated)
+                INSERT INTO editor_templates (id, name, kind, category, icon, description, xml, created_at_utc, updated_at_utc)
+                VALUES ($id, $name, $kind, $cat, $icon, $desc, $xml, $created, $updated)
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
                     kind = excluded.kind,
+                    category = excluded.category,
                     icon = excluded.icon,
                     description = excluded.description,
                     xml = excluded.xml,
@@ -356,6 +368,7 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
             cmd.Parameters.AddWithValue("$id", id);
             cmd.Parameters.AddWithValue("$name", request.Name.Trim());
             cmd.Parameters.AddWithValue("$kind", kind);
+            cmd.Parameters.AddWithValue("$cat", cat);
             cmd.Parameters.AddWithValue("$icon", request.Icon ?? "📄");
             cmd.Parameters.AddWithValue("$desc", request.Description ?? "");
             cmd.Parameters.AddWithValue("$xml", request.Xml);
@@ -366,8 +379,9 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
             return new EditorTemplateDto
             {
                 Id = id,
-                Name = request.Name,
+                Name = name,
                 Kind = kind,
+                Category = cat,
                 Icon = request.Icon ?? "📄",
                 Description = request.Description ?? "",
                 Xml = request.Xml,
@@ -375,6 +389,79 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
                 UpdatedAtUtc = now
             };
         }
+    }
+
+    /// <summary>
+    /// Import templates from the runtime Templates directory into the editor library.
+    /// Existing templates (matched by name) are skipped.
+    /// </summary>
+    public int ImportFromDirectory(string templatesDirectory)
+    {
+        if (!Directory.Exists(templatesDirectory)) return 0;
+        var imported = 0;
+        var extensions = new[] { ".saedocument", ".saeticket", ".saelabel", ".xml" };
+        foreach (var catDir in Directory.GetDirectories(templatesDirectory))
+        {
+            foreach (var file in Directory.GetFiles(catDir))
+            {
+                var ext = Path.GetExtension(file).ToLowerInvariant();
+                if (!extensions.Contains(ext)) continue;
+                var name = Path.GetFileNameWithoutExtension(file);
+                var catName = Path.GetFileName(catDir)!;
+                var xml = File.ReadAllText(file, Encoding.UTF8);
+                var kind = xml.TrimStart().StartsWith("<saedocument") ? "saedocument"
+                         : xml.TrimStart().StartsWith("<saetickets") ? "saetickets"
+                         : xml.TrimStart().StartsWith("<saelabels") ? "sae"
+                         : "saetickets";
+                var icon = kind switch { "saedocument" => "📄", "saetickets" => "🧾", _ => "🏷️" };
+                var desc = ExtractDescriptionText(xml);
+
+                var id = Guid.NewGuid().ToString("N");
+                var now = DateTime.UtcNow.ToString("O");
+                lock (_sync)
+                {
+                    using var cn = Open();
+                    // Skip if a template with this name already exists
+                    using var checkCmd = cn.CreateCommand();
+                    checkCmd.CommandText = "SELECT COUNT(1) FROM editor_templates WHERE name = @name;";
+                    checkCmd.Parameters.AddWithValue("@name", name);
+                    if ((long)checkCmd.ExecuteScalar()! > 0) continue;
+
+                    using var insertCmd = cn.CreateCommand();
+                    insertCmd.CommandText = """
+                        INSERT INTO editor_templates (id, name, kind, category, icon, description, xml, created_at_utc, updated_at_utc)
+                        VALUES ($id, $name, $kind, $cat, $icon, $desc, $xml, $created, $updated);
+                        """;
+                    insertCmd.Parameters.AddWithValue("$id", id);
+                    insertCmd.Parameters.AddWithValue("$name", name);
+                    insertCmd.Parameters.AddWithValue("$kind", kind);
+                    insertCmd.Parameters.AddWithValue("$cat", catName);
+                    insertCmd.Parameters.AddWithValue("$icon", icon);
+                    insertCmd.Parameters.AddWithValue("$desc", desc);
+                    insertCmd.Parameters.AddWithValue("$xml", xml);
+                    insertCmd.Parameters.AddWithValue("$created", now);
+                    insertCmd.Parameters.AddWithValue("$updated", now);
+                    insertCmd.ExecuteNonQuery();
+                    imported++;
+                }
+            }
+        }
+        return imported;
+    }
+
+    private static string ExtractDescriptionText(string xml)
+    {
+        try
+        {
+            var trimmed = xml.TrimStart();
+            if (trimmed.StartsWith("<!--"))
+            {
+                var end = trimmed.IndexOf("-->", 4);
+                if (end > 0) return trimmed.Substring(4, end - 4).Trim();
+            }
+        }
+        catch { }
+        return "";
     }
 
     public string? GetSetting(string key)
@@ -452,6 +539,7 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
                     kind TEXT NOT NULL,
+                    category TEXT NOT NULL DEFAULT 'restaurant',
                     icon TEXT,
                     description TEXT,
                     xml TEXT NOT NULL,
@@ -460,6 +548,9 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
                 );
                 """;
             cmd.ExecuteNonQuery();
+
+            // Migration: add category column if missing (for existing DBs)
+            try { using var m = cn.CreateCommand(); m.CommandText = "ALTER TABLE editor_templates ADD COLUMN category TEXT NOT NULL DEFAULT 'restaurant';"; m.ExecuteNonQuery(); } catch { }
         }
     }
 
@@ -932,13 +1023,14 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
             foreach (var t in templates)
             {
                 cmd.CommandText = """
-                    INSERT OR REPLACE INTO editor_templates (id, name, kind, icon, description, xml, created_at_utc, updated_at_utc)
-                    VALUES ($id, $name, $kind, $icon, $desc, $xml, $created, $updated);
+                    INSERT OR REPLACE INTO editor_templates (id, name, kind, category, icon, description, xml, created_at_utc, updated_at_utc)
+                    VALUES ($id, $name, $kind, $cat, $icon, $desc, $xml, $created, $updated);
                     """;
                 cmd.Parameters.Clear();
                 cmd.Parameters.AddWithValue("$id", t.Id);
                 cmd.Parameters.AddWithValue("$name", t.Name);
                 cmd.Parameters.AddWithValue("$kind", t.Kind);
+                cmd.Parameters.AddWithValue("$cat", "restaurant");
                 cmd.Parameters.AddWithValue("$icon", t.Icon);
                 cmd.Parameters.AddWithValue("$desc", t.Description);
                 cmd.Parameters.AddWithValue("$xml", t.Xml);
@@ -974,7 +1066,7 @@ public sealed class EditorLibraryStore : IEditorLibraryStore
         var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
         return normalized switch
         {
-            "sae" or "glabels" or "saetickets" => normalized,
+            "sae" or "glabels" or "saetickets" or "saedocument" => normalized,
             _ => "sae"
         };
     }

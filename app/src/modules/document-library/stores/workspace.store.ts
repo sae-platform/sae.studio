@@ -105,8 +105,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       timeoutMs: (loadFromStorage("timeoutMs", 30000)) as number,
       docKind: (loadFromStorage("docKind", "sae")) as DocKind,
       labelXml: (loadFromStorage("xml", DEFAULT_LABEL_XML)) as string,
-      ticketXml: DEFAULT_TICKET_XML,
-      documentXml: DEFAULT_DOCUMENT_XML,
+      ticketXml: (loadFromStorage("ticketXml", DEFAULT_TICKET_XML)) as string,
+      documentXml: (loadFromStorage("documentXml", DEFAULT_DOCUMENT_XML)) as string,
       documentModel: null,
       selectedElementId: null,
       selectedPageIndex: 0,
@@ -146,12 +146,18 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         localStorage.setItem("saestudio.app.xml", JSON.stringify(xml));
         set({ labelXml: xml });
       },
-      setTicketXml: (ticketXml) => set({ ticketXml }),
+      setTicketXml: (ticketXml) => {
+        localStorage.setItem("saestudio.app.ticketXml", JSON.stringify(ticketXml));
+        set({ ticketXml });
+      },
       setLabelDocId: (labelDocId) => set({ labelDocId }),
       setTicketDocId: (ticketDocId) => set({ ticketDocId }),
       setLabelDocName: (labelDocName) => set({ labelDocName }),
       setTicketDocName: (ticketDocName) => set({ ticketDocName }),
-      setDocumentXml: (documentXml) => set({ documentXml }),
+      setDocumentXml: (documentXml) => {
+        localStorage.setItem("saestudio.app.documentXml", JSON.stringify(documentXml));
+        set({ documentXml });
+      },
       setDocumentDocId: (documentDocId) => set({ documentDocId }),
       setDocumentDocName: (documentDocName) => set({ documentDocName }),
       setDocumentModel: (documentModel) => set({ documentModel }),

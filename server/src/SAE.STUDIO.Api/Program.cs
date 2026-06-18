@@ -224,6 +224,15 @@ builder.Services.AddSingleton<SAE.STUDIO.Api.Services.AssetStore>();
 
 var app = builder.Build();
 
+// Auto-import runtime templates into editor library on startup
+var templatesDir = Path.Combine(AppContext.BaseDirectory, "Templates");
+var libraryStore = app.Services.GetRequiredService<IEditorLibraryStore>();
+var imported = libraryStore.ImportFromDirectory(templatesDir);
+if (imported > 0)
+{
+    app.Logger.LogInformation("Imported {Count} runtime templates into editor library from {Dir}", imported, templatesDir);
+}
+
 app.MapOpenApi("/openapi/{documentName}.json");
 app.MapScalarApiReference("/scalar", options =>
 {

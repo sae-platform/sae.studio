@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://sae.studio/schemas/saedocument"
+           elementFormDefault="qualified">
+
+  <!-- Root: supports both runtime (setup) and design-time (page) formats -->
+  <xs:element name="saedocument">
+    <xs:complexType>
+      <xs:choice>
+        <!-- Runtime format: <setup> + flat sections -->
+        <xs:sequence>
+          <xs:element ref="setup" minOccurs="0"/>
+          <xs:group ref="DocumentSections" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <!-- Design-time format: metadata + variables + theme + page[] -->
+        <xs:sequence>
+          <xs:element ref="metadata"    minOccurs="0"/>
+          <xs:element ref="datasources" minOccurs="0"/>
+          <xs:element ref="assets"     minOccurs="0"/>
+          <xs:element ref="variables"  minOccurs="0"/>
+          <xs:element ref="theme"      minOccurs="0"/>
+          <xs:element ref="page"       minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:choice>
+      <xs:attribute name="version" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Metadata -->
+  <xs:element name="metadata">
+    <xs:complexType>
+      <xs:attribute name="title"   type="xs:string"/>
+      <xs:attribute name="author"  type="xs:string"/>
+      <xs:attribute name="subject" type="xs:string"/>
+      <xs:attribute name="keywords" type="xs:string"/>
+      <xs:attribute name="created" type="xs:string"/>
+      <xs:attribute name="version" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Datasources -->
+  <xs:element name="datasources">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="datasource" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="datasource">
+    <xs:complexType>
+      <xs:attribute name="name"       type="xs:string" use="required"/>
+      <xs:attribute name="type"       type="xs:string"/>
+      <xs:attribute name="columns"    type="xs:string"/>
+      <xs:attribute name="sampleData" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Assets -->
+  <xs:element name="assets">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="asset" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="asset">
+    <xs:complexType>
+      <xs:attribute name="id"     type="xs:string" use="required"/>
+      <xs:attribute name="name"   type="xs:string"/>
+      <xs:attribute name="type"   type="xs:string"/>
+      <xs:attribute name="source" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Variables -->
+  <xs:element name="variables">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="variable" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="variable">
+    <xs:complexType>
+      <xs:attribute name="name"      type="xs:string" use="required"/>
+      <xs:attribute name="type"      type="xs:string"/>
+      <xs:attribute name="initial"   type="xs:string"/>
+      <xs:attribute name="increment" type="xs:string"/>
+      <xs:attribute name="step"      type="xs:decimal"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Theme -->
+  <xs:element name="theme">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="base"    minOccurs="0"/>
+        <xs:element ref="preset"  minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="id"          type="xs:string"/>
+      <xs:attribute name="name"        type="xs:string"/>
+      <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="base">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementStyleAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="preset">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementStyleAttrs"/>
+      <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:attributeGroup name="ElementStyleAttrs">
+    <xs:attribute name="fontFamily"      type="xs:string"/>
+    <xs:attribute name="fontSize"        type="xs:decimal"/>
+    <xs:attribute name="fontWeight"      type="xs:string"/>
+    <xs:attribute name="fontStyle"       type="xs:string"/>
+    <xs:attribute name="color"           type="xs:string"/>
+    <xs:attribute name="backgroundColor" type="xs:string"/>
+    <xs:attribute name="borderColor"     type="xs:string"/>
+    <xs:attribute name="borderWidth"     type="xs:decimal"/>
+    <xs:attribute name="borderRadius"    type="xs:decimal"/>
+    <xs:attribute name="alignment"       type="xs:string"/>
+    <xs:attribute name="lineHeight"      type="xs:decimal"/>
+  </xs:attributeGroup>
+
+  <!-- Page -->
+  <xs:element name="page">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="layers"  minOccurs="0"/>
+        <xs:element ref="header"  minOccurs="0"/>
+        <xs:element ref="body"    minOccurs="0"/>
+        <xs:element ref="footer"  minOccurs="0"/>
+      </xs:sequence>
+      <xs:attribute name="id"          type="xs:string"/>
+      <xs:attribute name="width"       type="xs:decimal" use="required"/>
+      <xs:attribute name="height"      type="xs:decimal" use="required"/>
+      <xs:attribute name="unit"        type="xs:string"/>
+      <xs:attribute name="orientation" type="xs:string"/>
+      <xs:attribute name="marginTop"    type="xs:string"/>
+      <xs:attribute name="marginBottom" type="xs:string"/>
+      <xs:attribute name="marginLeft"   type="xs:string"/>
+      <xs:attribute name="marginRight"  type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Layers -->
+  <xs:element name="layers">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="layer" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="layer">
+    <xs:complexType>
+      <xs:attribute name="id"      type="xs:string"/>
+      <xs:attribute name="name"    type="xs:string"/>
+      <xs:attribute name="visible" type="xs:boolean"/>
+      <xs:attribute name="locked"  type="xs:boolean"/>
+      <xs:attribute name="zIndex"  type="xs:integer"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Bands (header / body / footer) -->
+  <xs:element name="header">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="id"        type="xs:string"/>
+      <xs:attribute name="height"    type="xs:decimal"/>
+      <xs:attribute name="canGrow"   type="xs:boolean"/>
+      <xs:attribute name="canShrink" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="body">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="id"        type="xs:string"/>
+      <xs:attribute name="height"    type="xs:decimal"/>
+      <xs:attribute name="canGrow"   type="xs:boolean"/>
+      <xs:attribute name="canShrink" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="footer">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="id"        type="xs:string"/>
+      <xs:attribute name="height"    type="xs:decimal"/>
+      <xs:attribute name="canGrow"   type="xs:boolean"/>
+      <xs:attribute name="canShrink" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Setup (runtime format) -->
+  <xs:element name="setup">
+    <xs:complexType>
+      <xs:attribute name="pageSize"    type="xs:string"/>
+      <xs:attribute name="orientation" type="xs:string"/>
+      <xs:attribute name="marginTop"    type="xs:string"/>
+      <xs:attribute name="marginBottom" type="xs:string"/>
+      <xs:attribute name="marginLeft"   type="xs:string"/>
+      <xs:attribute name="marginRight"  type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Runtime flat sections (header/body/footer + section) -->
+  <xs:group name="DocumentSections">
+    <xs:choice>
+      <xs:element name="header">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="RuntimeElements" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="body">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="RuntimeElements" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="footer">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="RuntimeElements" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="section">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:group ref="RuntimeElements" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:choice>
+  </xs:group>
+
+  <!-- Runtime elements (flat format) -->
+  <xs:group name="RuntimeElements">
+    <xs:choice>
+      <xs:element name="text">
+        <xs:complexType mixed="true">
+          <xs:attribute name="size"   type="xs:string"/>
+          <xs:attribute name="bold"   type="xs:string"/>
+          <xs:attribute name="align"  type="xs:string"/>
+          <xs:attribute name="color"  type="xs:string"/>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="table">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element ref="column" minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="source"     type="xs:string"/>
+          <xs:attribute name="showHeader" type="xs:string"/>
+          <xs:attribute name="showIf"     type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="line">
+        <xs:complexType>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="spacer">
+        <xs:complexType>
+          <xs:attribute name="height" type="xs:string"/>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="image">
+        <xs:complexType>
+          <xs:attribute name="source" type="xs:string"/>
+          <xs:attribute name="width"  type="xs:string"/>
+          <xs:attribute name="height" type="xs:string"/>
+          <xs:attribute name="align"  type="xs:string"/>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="qr">
+        <xs:complexType>
+          <xs:attribute name="content" type="xs:string"/>
+          <xs:attribute name="size"    type="xs:string"/>
+          <xs:attribute name="align"   type="xs:string"/>
+          <xs:attribute name="showIf"  type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="total">
+        <xs:complexType>
+          <xs:attribute name="label"  type="xs:string"/>
+          <xs:attribute name="value"  type="xs:string"/>
+          <xs:attribute name="align"  type="xs:string"/>
+          <xs:attribute name="bold"   type="xs:string"/>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="subtotal">
+        <xs:complexType>
+          <xs:attribute name="label"  type="xs:string"/>
+          <xs:attribute name="value"  type="xs:string"/>
+          <xs:attribute name="align"  type="xs:string"/>
+          <xs:attribute name="bold"   type="xs:string"/>
+          <xs:attribute name="showIf" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:choice>
+  </xs:group>
+
+  <!-- Design Elements -->
+  <xs:group name="DesignElements">
+    <xs:choice>
+      <xs:element ref="text"/>
+      <xs:element ref="image"/>
+      <xs:element ref="line"/>
+      <xs:element ref="rectangle"/>
+      <xs:element ref="ellipse"/>
+      <xs:element ref="barcode"/>
+      <xs:element ref="qr"/>
+      <xs:element ref="table"/>
+      <xs:element ref="total"/>
+      <xs:element ref="subtotal"/>
+      <xs:element ref="variable"/>
+      <xs:element ref="panel"/>
+      <xs:element ref="group"/>
+      <xs:element ref="if"/>
+      <xs:element ref="repeat"/>
+      <xs:element ref="pagebreak"/>
+      <xs:element ref="sectionbreak"/>
+    </xs:choice>
+  </xs:group>
+
+  <!-- Element common attributes -->
+  <xs:attributeGroup name="ElementBaseAttrs">
+    <xs:attribute name="id"      type="xs:string"/>
+    <xs:attribute name="x"       type="xs:decimal"/>
+    <xs:attribute name="y"       type="xs:decimal"/>
+    <xs:attribute name="width"   type="xs:decimal"/>
+    <xs:attribute name="height"  type="xs:decimal"/>
+    <xs:attribute name="anchor"  type="xs:string"/>
+    <xs:attribute name="showIf"  type="xs:string"/>
+    <xs:attribute name="layerId" type="xs:string"/>
+    <xs:attribute name="locked"  type="xs:boolean"/>
+    <xs:attribute name="hidden"  type="xs:boolean"/>
+    <xs:attribute name="preset"  type="xs:string"/>
+  </xs:attributeGroup>
+
+  <!-- Text -->
+  <xs:element name="text">
+    <xs:complexType mixed="true">
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="content"   type="xs:string"/>
+      <xs:attribute name="font"      type="xs:string"/>
+      <xs:attribute name="size"      type="xs:decimal"/>
+      <xs:attribute name="bold"      type="xs:boolean"/>
+      <xs:attribute name="italic"    type="xs:boolean"/>
+      <xs:attribute name="underline" type="xs:boolean"/>
+      <xs:attribute name="align"     type="xs:string"/>
+      <xs:attribute name="color"     type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Image -->
+  <xs:element name="image">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="source" type="xs:string"/>
+      <xs:attribute name="fit"    type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Line -->
+  <xs:element name="line">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="x1"        type="xs:decimal"/>
+      <xs:attribute name="y1"        type="xs:decimal"/>
+      <xs:attribute name="x2"        type="xs:decimal"/>
+      <xs:attribute name="y2"        type="xs:decimal"/>
+      <xs:attribute name="color"     type="xs:string"/>
+      <xs:attribute name="lineWidth" type="xs:decimal"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Rectangle -->
+  <xs:element name="rectangle">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="fillColor"    type="xs:string"/>
+      <xs:attribute name="borderColor"  type="xs:string"/>
+      <xs:attribute name="borderWidth"  type="xs:decimal"/>
+      <xs:attribute name="borderRadius" type="xs:decimal"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Ellipse -->
+  <xs:element name="ellipse">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="fillColor"    type="xs:string"/>
+      <xs:attribute name="borderColor"  type="xs:string"/>
+      <xs:attribute name="borderWidth"  type="xs:decimal"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Barcode -->
+  <xs:element name="barcode">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="value"    type="xs:string"/>
+      <xs:attribute name="kind"     type="xs:string"/>
+      <xs:attribute name="showText" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- QR -->
+  <xs:element name="qr">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="value"      type="xs:string"/>
+      <xs:attribute name="size"       type="xs:decimal"/>
+      <xs:attribute name="errorLevel" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Table -->
+  <xs:element name="table">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="column" minOccurs="1" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="source"          type="xs:string"/>
+      <xs:attribute name="showHeader"      type="xs:boolean"/>
+      <xs:attribute name="stripeColor"     type="xs:string"/>
+      <xs:attribute name="headerColor"     type="xs:string"/>
+      <xs:attribute name="headerTextColor" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="column">
+    <xs:complexType>
+      <xs:attribute name="field"  type="xs:string" use="required"/>
+      <xs:attribute name="header" type="xs:string"/>
+      <xs:attribute name="width"  type="xs:string"/>
+      <xs:attribute name="align"  type="xs:string"/>
+      <xs:attribute name="format" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Total / Subtotal -->
+  <xs:element name="total">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="label"  type="xs:string"/>
+      <xs:attribute name="field"  type="xs:string"/>
+      <xs:attribute name="format" type="xs:string"/>
+      <xs:attribute name="font"   type="xs:string"/>
+      <xs:attribute name="size"   type="xs:decimal"/>
+      <xs:attribute name="bold"   type="xs:boolean"/>
+      <xs:attribute name="align"  type="xs:string"/>
+      <xs:attribute name="color"  type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="subtotal">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="label"  type="xs:string"/>
+      <xs:attribute name="field"  type="xs:string"/>
+      <xs:attribute name="format" type="xs:string"/>
+      <xs:attribute name="font"   type="xs:string"/>
+      <xs:attribute name="size"   type="xs:decimal"/>
+      <xs:attribute name="bold"   type="xs:boolean"/>
+      <xs:attribute name="align"  type="xs:string"/>
+      <xs:attribute name="color"  type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Variable -->
+  <xs:element name="variable">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="variableName" type="xs:string"/>
+      <xs:attribute name="font"   type="xs:string"/>
+      <xs:attribute name="size"   type="xs:decimal"/>
+      <xs:attribute name="bold"   type="xs:boolean"/>
+      <xs:attribute name="align"  type="xs:string"/>
+      <xs:attribute name="color"  type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Panel -->
+  <xs:element name="panel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="fillColor"    type="xs:string"/>
+      <xs:attribute name="borderColor"  type="xs:string"/>
+      <xs:attribute name="borderWidth"  type="xs:decimal"/>
+      <xs:attribute name="borderRadius" type="xs:decimal"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Group -->
+  <xs:element name="group">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- If -->
+  <xs:element name="if">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="then" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="else" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="condition" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Repeat -->
+  <xs:element name="repeat">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:group ref="DesignElements" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+      <xs:attribute name="source"    type="xs:string"/>
+      <xs:attribute name="direction" type="xs:string"/>
+      <xs:attribute name="gap"       type="xs:decimal"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Page Break -->
+  <xs:element name="pagebreak">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Section Break -->
+  <xs:element name="sectionbreak">
+    <xs:complexType>
+      <xs:attributeGroup ref="ElementBaseAttrs"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

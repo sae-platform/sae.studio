@@ -1,0 +1,29 @@
+<saedocument version="2.0">
+  <page width="210" height="297" unit="mm" orientation="portrait" marginTop="15" marginBottom="15" marginLeft="12" marginRight="12">
+    <header>
+      <text size="20" bold="true" align="center">${!EMPRESA}</text>
+      <spacer height="5"/>
+      <line/>
+      <spacer height="3"/>
+      <text size="16" bold="true" align="center">NOTA DE DÉBITO</text>
+      <text size="10" align="center">#${NUMERO}</text>
+      <text size="9">Ref. Factura: ${FACTURA_REF}</text>
+      <spacer height="3"/>
+      <text size="10" bold="true">Cliente: ${CLIENTE_NOMBRE}</text>
+      <text size="9">Fecha: ${FECHA}</text>
+      <spacer height="5"/>
+    </header>
+    <body>
+      <text size="10" bold="true">Motivo: ${MOTIVO}</text>
+      <spacer height="3"/>
+      <text size="9">Descripción: ${DESCRIPCION}</text>
+      <spacer height="5"/>
+      <text size="12" bold="true" align="right">Monto: ${MONTO}</text>
+      <spacer height="5"/>
+      <line/>
+    </body>
+    <footer>
+      <text size="7" align="center">Generado el ${!DATE} ${!TIME}</text>
+    </footer>
+  </page>
+</saedocument>
