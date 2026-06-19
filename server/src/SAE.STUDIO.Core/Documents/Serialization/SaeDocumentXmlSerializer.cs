@@ -170,6 +170,8 @@ public static class SaeDocumentXmlSerializer
             LayerId = A(el, "layerId"),
             Locked  = AB(el, "locked"),
             Hidden  = AB(el, "hidden"),
+            Preset  = A(el, "preset"),
+            Anchor  = A(el, "anchor")?.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => Enum.TryParse<Anchor>(s.Trim(), ignoreCase: true, out var a) ? a : (Anchor?)null).OfType<Anchor>().ToArray() ?? [],
         };
 
         return el.Name.LocalName switch
@@ -432,7 +434,9 @@ public static class SaeDocumentXmlSerializer
             Attr("showIf",  item.ShowIf),
             Attr("layerId", item.LayerId),
             Attr("locked",  item.Locked),
-            Attr("hidden",  item.Hidden));
+            Attr("hidden",  item.Hidden),
+            Attr("preset",  item.Preset),
+            Attr("anchor",  item.Anchor is { Length: > 0 } ? string.Join(",", item.Anchor) : null));
 
         switch (item)
         {

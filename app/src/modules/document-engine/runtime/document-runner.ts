@@ -6,8 +6,8 @@
 import type { SaeDocumentModel, DataSourceDef } from "../models/document";
 import type { PageDef } from "../models/page";
 import type { BandDef } from "../models/band";
-import type { DocumentElement } from "../models/elements";
-import { resolveTemplate, evaluateCondition } from "../expressions";
+import type { DocumentElement, ComponentDef } from "../models/elements";
+import { resolveTemplate, evaluateCondition, formatValue } from "../expressions";
 
 // ── Preview Context ───────────────────────────────────────────
 
@@ -18,6 +18,8 @@ export interface PreviewContext {
   datasources: Record<string, Record<string, unknown>[]>;
   /** Variable values */
   variables: Record<string, unknown>;
+  /** Component library for include resolution */
+  componentLibrary?: ComponentDef[];
 }
 
 function buildContext(ctx: PreviewContext): Record<string, unknown> {
@@ -74,6 +76,7 @@ export interface RenderedPage {
   header?: RenderedBand;
   body?: RenderedBand;
   footer?: RenderedBand;
+  dataBands?: RenderedBand[];
 }
 
 export interface RenderedDocument {
@@ -94,39 +97,63 @@ function runElement(el: DocumentElement, context: Record<string, unknown>, ctx: 
   // Evaluate showIf
   if (el.showIf && !evaluateCondition(el.showIf, context)) return null;
 
+  // Apply styleRules — first matching rule overrides element props
+  let resolvedEl = { ...el };
+  const rules = (el as any).styleRules as any[] | undefined;
+  if (rules) {
+    for (const rule of rules) {
+      if (evaluateCondition(rule.expr, context)) {
+        if (rule.visible === false) return null;
+        for (const key of Object.keys(rule)) {
+          if (key === "expr") continue;
+          if (rule[key] !== undefined && rule[key] !== false) (resolvedEl as any)[key] = rule[key];
+          else if (rule[key] === false && key !== "bold" && key !== "italic" && key !== "underline" && key !== "strikethrough" && key !== "visible") (resolvedEl as any)[key] = rule[key];
+        }
+        break;
+      }
+    }
+  }
+
   const base: RenderedElement = {
-    id: el.id,
-    type: el.type,
-    x: el.x,
-    y: el.y,
-    width: el.width,
-    height: el.height,
+    id: resolvedEl.id,
+    type: resolvedEl.type,
+    x: resolvedEl.x,
+    y: resolvedEl.y,
+    width: resolvedEl.width,
+    height: resolvedEl.height,
     original: el,
   };
 
-  switch (el.type) {
-    case "text":
-      return { ...base, resolvedContent: resolveTemplate(el.content, context) };
+  switch (resolvedEl.type) {
+    case "text": {
+      const raw = (resolvedEl as any).value ?? resolvedEl.content;
+      const resolved = resolveTemplate(raw, context);
+      const fmt = (resolvedEl as any).format;
+      const fmtStr = (resolvedEl as any).formatString;
+      const formatted = fmt ? formatValue(resolved, fmt, fmtStr) : resolved;
+      return { ...base, resolvedContent: formatted, original: el };
+    }
 
     case "image":
-      return { ...base, resolvedContent: resolveTemplate(el.source, context) };
+      return { ...base, resolvedContent: resolveTemplate(resolvedEl.source, context) };
 
     case "barcode":
     case "qr":
-      return { ...base, resolvedContent: resolveTemplate(el.value, context) };
+      return { ...base, resolvedContent: resolveTemplate(resolvedEl.value, context) };
 
     case "total":
     case "subtotal":
     case "variable": {
-      const varName = el.type === "variable" ? el.variableName : el.field;
+      const varName = resolvedEl.type === "variable" ? (resolvedEl as any).variableName : (resolvedEl as any).field;
       const val = context[varName] ?? resolveTemplate(`\${${varName}}`, context);
       return { ...base, resolvedContent: String(val ?? "") };
     }
 
     case "table": {
-      const rows = resolveSource(el.source, ctx);
+      const table = el as any;
+      const rows = resolveSource(table.source, ctx);
       const expandedRows = rows.map((row) =>
-        el.columns.map((col) => ({
+        table.columns.map((col: any) => ({
           field: col.field,
           header: col.header ?? col.field,
           value: String(row[col.field] ?? ""),
@@ -139,27 +166,27 @@ function runElement(el: DocumentElement, context: Record<string, unknown>, ctx: 
 
     case "panel":
     case "group": {
-      const children = el.elements
-        .map((child) => runElement(child, context, ctx))
-        .filter((c): c is RenderedElement => c !== null);
+      const children = (el as any).elements
+        .map((child: DocumentElement) => runElement(child, context, ctx))
+        .filter((c: unknown): c is RenderedElement => c !== null);
       return { ...base, children };
     }
 
     case "if": {
-      const condition = evaluateCondition(el.condition, context);
-      const branch = condition ? el.thenElements : (el.elseElements ?? []);
+      const condition = evaluateCondition((el as any).condition, context);
+      const branch = condition ? (el as any).thenElements : ((el as any).elseElements ?? []);
       const children = branch
-        .map((child) => runElement(child, context, ctx))
-        .filter((c): c is RenderedElement => c !== null);
+        .map((child: DocumentElement) => runElement(child, context, ctx))
+        .filter((c: unknown): c is RenderedElement => c !== null);
       return { ...base, type: "group", children };
     }
 
     case "repeat": {
-      const rows = resolveSource(el.source, ctx);
+      const rows = resolveSource((el as any).source, ctx);
       const children: RenderedElement[] = [];
       for (const row of rows) {
         const rowCtx = { ...context, ...row };
-        for (const child of el.elements) {
+        for (const child of (el as any).elements) {
           const rendered = runElement(child, rowCtx, ctx);
           if (rendered) children.push(rendered);
         }
@@ -167,19 +194,46 @@ function runElement(el: DocumentElement, context: Record<string, unknown>, ctx: 
       return { ...base, type: "group", children };
     }
 
-    case "line":
     case "rectangle":
     case "ellipse":
     case "pagebreak":
     case "sectionbreak":
       return base;
 
+    case "include": {
+      const compId = (el as any).component as string;
+      const comp = (ctx as any).componentLibrary?.find?.((c: ComponentDef) => c.id === compId || c.name === compId);
+      if (comp) {
+        const children = comp.elements
+          .map((ce: DocumentElement) => runElement(ce, context, ctx))
+          .filter((re: unknown): re is RenderedElement => re !== null);
+        return { ...base, type: "include", children, resolvedContent: comp.name };
+      }
+      return { ...base, resolvedContent: `[Comp: ${compId}]` };
+    }
+
     default:
       return base;
   }
 }
 
-function runBand(band: BandDef, context: Record<string, unknown>, ctx: PreviewContext): RenderedBand {
+function runBand(band: BandDef, context: Record<string, unknown>, ctx: PreviewContext): RenderedBand | RenderedBand[] {
+  if (band.type === "databand" && band.source) {
+    const rows = resolveSource(band.source, ctx);
+    if (rows.length === 0) return [];
+    return rows.map((row, i) => {
+      const rowCtx = { ...context, ...row };
+      return {
+        id: `${band.id}-${i}`,
+        type: band.type,
+        height: band.height,
+        elements: band.elements
+          .map((el) => runElement(el, rowCtx, ctx))
+          .filter((e): e is RenderedElement => e !== null),
+      } as RenderedBand;
+    });
+  }
+
   return {
     id: band.id,
     type: band.type,
@@ -191,14 +245,22 @@ function runBand(band: BandDef, context: Record<string, unknown>, ctx: PreviewCo
 }
 
 function runPage(page: PageDef, context: Record<string, unknown>, ctx: PreviewContext): RenderedPage {
+  const dataBandsResult: RenderedBand[] = [];
+  if (page.dataBands) {
+    for (const db of page.dataBands) {
+      const result = runBand(db, context, ctx);
+      if (Array.isArray(result)) dataBandsResult.push(...result);
+    }
+  }
   return {
     id: page.id,
     width: page.width,
     height: page.height,
     unit: page.unit,
-    header: page.header ? runBand(page.header, context, ctx) : undefined,
-    body:   page.body   ? runBand(page.body,   context, ctx) : undefined,
-    footer: page.footer ? runBand(page.footer, context, ctx) : undefined,
+    header: page.header ? (runBand(page.header, context, ctx) as RenderedBand) : undefined,
+    body:   page.body   ? (runBand(page.body,   context, ctx) as RenderedBand) : undefined,
+    footer: page.footer ? (runBand(page.footer, context, ctx) as RenderedBand) : undefined,
+    dataBands: dataBandsResult.length > 0 ? dataBandsResult : undefined,
   };
 }
 
@@ -237,5 +299,5 @@ export function createPreviewContext(
     variables[v.name] = v.initial ?? "";
   }
 
-  return { sampleData, datasources, variables };
+  return { sampleData, datasources, variables, componentLibrary: doc.componentLibrary };
 }

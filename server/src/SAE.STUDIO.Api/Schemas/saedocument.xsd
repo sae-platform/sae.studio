@@ -78,18 +78,16 @@
   <xs:element name="variables">
     <xs:complexType>
       <xs:sequence>
-        <xs:element ref="variable" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element name="variable" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="name"      type="xs:string" use="required"/>
+            <xs:attribute name="type"      type="xs:string"/>
+            <xs:attribute name="initial"   type="xs:string"/>
+            <xs:attribute name="increment" type="xs:string"/>
+            <xs:attribute name="step"      type="xs:decimal"/>
+          </xs:complexType>
+        </xs:element>
       </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-  <xs:element name="variable">
-    <xs:complexType>
-      <xs:attribute name="name"      type="xs:string" use="required"/>
-      <xs:attribute name="type"      type="xs:string"/>
-      <xs:attribute name="initial"   type="xs:string"/>
-      <xs:attribute name="increment" type="xs:string"/>
-      <xs:attribute name="step"      type="xs:decimal"/>
     </xs:complexType>
   </xs:element>
 

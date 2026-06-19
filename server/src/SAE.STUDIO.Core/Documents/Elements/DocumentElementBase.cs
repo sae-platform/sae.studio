@@ -35,4 +35,7 @@ public abstract record DocumentElementBase
 
     public bool Locked { get; init; }
     public bool Hidden { get; init; }
+
+    /// <summary>Theme preset name for inheritable styles.</summary>
+    public string? Preset { get; init; }
 }

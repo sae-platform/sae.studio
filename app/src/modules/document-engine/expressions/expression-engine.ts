@@ -113,11 +113,92 @@ export function evaluateExpression(expr: string, context: ExpressionContext): un
 export function resolveTemplate(
   template: string,
   context: ExpressionContext,
+  pageNumber?: number,
+  totalPages?: number,
 ): string {
   return template.replace(/\$\{([^}]+)\}/g, (_match, expr: string) => {
-    const result = evaluateExpression(expr.trim(), context);
+    const trimmed = expr.trim();
+
+    // Builtins
+    if (trimmed.startsWith("!")) {
+      return resolveBuiltin(trimmed, pageNumber, totalPages);
+    }
+
+    // Functions: SUM(), AVG(), COUNT(), MAX(), MIN()
+    const funcMatch = trimmed.match(/^(\w+)\(([^)]*)\)$/);
+    if (funcMatch) {
+      const result = resolveFunction(funcMatch[1].toUpperCase(), funcMatch[2].trim(), context);
+      return result === undefined || result === null ? "" : String(result);
+    }
+
+    const result = evaluateExpression(trimmed, context);
     return result === undefined || result === null ? "" : String(result);
   });
+}
+
+function resolveBuiltin(name: string, page?: number, total?: number): string {
+  const now = new Date();
+  switch (name) {
+    case "!DATE": return now.toLocaleDateString("es-CR");
+    case "!TIME": return now.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" });
+    case "!DATETIME": return `${now.toLocaleDateString("es-CR")} ${now.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}`;
+    case "!YEAR": return String(now.getFullYear());
+    case "!MONTH": return String(now.getMonth() + 1).padStart(2, "0");
+    case "!DAY": return String(now.getDate()).padStart(2, "0");
+    case "!PAGE": return page != null ? String(page) : "1";
+    case "!TOTAL_PAGES": return total != null ? String(total) : "1";
+    default: return "";
+  }
+}
+
+function resolveFunction(name: string, arg: string, context: ExpressionContext): unknown {
+  // Resolve array from context (e.g., "Items" → context["Items"])
+  const resolved = evaluateExpression(arg, context);
+  if (!resolved || !Array.isArray(resolved)) return resolved;
+
+  const arr = resolved as Record<string, unknown>[];
+  if (arr.length === 0) return name === "COUNT" ? 0 : undefined;
+
+  // For SUM/AVG/MAX/MIN, extract numeric values using the field path
+  // e.g., SUM(Items.Total) → sum all Items[i].Total
+  // e.g., COUNT(Items) → count items
+  // e.g., SUM(Detalle.Total) → if Detalle is an array of {Total: number}
+  const values = arr.map(item => Number(item[arg.split(".").pop()!] ?? 0)).filter(v => !isNaN(v));
+
+  switch (name) {
+    case "SUM": return values.reduce((a, b) => a + b, 0);
+    case "AVG": return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+    case "COUNT": return arr.length;
+    case "MAX": return values.length > 0 ? Math.max(...values) : 0;
+    case "MIN": return values.length > 0 ? Math.min(...values) : 0;
+    default: return undefined;
+  }
+}
+
+export function formatValue(value: unknown, format?: string, formatString?: string): string {
+  if (value === null || value === undefined) return "";
+  const num = Number(value);
+
+  switch (format) {
+    case "currency": return new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", minimumFractionDigits: 2 }).format(isNaN(num) ? 0 : num);
+    case "number": return new Intl.NumberFormat("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(isNaN(num) ? 0 : num);
+    case "percent": return new Intl.NumberFormat("es-CR", { style: "percent", minimumFractionDigits: 2 }).format(isNaN(num) ? 0 : num / 100);
+    case "date": {
+      const d = new Date(String(value));
+      return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString("es-CR");
+    }
+    case "datetime": {
+      const d = new Date(String(value));
+      return isNaN(d.getTime()) ? String(value) : `${d.toLocaleDateString("es-CR")} ${d.toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    case "custom": {
+      if (!formatString) return String(value);
+      // Simple formatting: #,##0.00 → Intl
+      const decimals = (formatString.match(/0\.(0+)/)?.[1]?.length) ?? 0;
+      return new Intl.NumberFormat("es-CR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(isNaN(num) ? 0 : num);
+    }
+    default: return String(value);
+  }
 }
 
 export function evaluateCondition(

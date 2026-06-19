@@ -14,6 +14,8 @@ public sealed class SaeDocument
     public float MarginRight { get; init; } = 15;
 
     public List<DocElement> Elements { get; init; } = [];
+    public List<DocWatermarkElement> Watermarks { get; init; } = [];
+    public List<DocInvoiceSection> DataBands { get; init; } = [];
 }
 
 public abstract record DocElement(string? ShowIf = null);
@@ -21,10 +23,28 @@ public abstract record DocElement(string? ShowIf = null);
 public sealed record DocTextElement(
     string Content,
     string? Align = null,
-    int? Size = null,
+    float? Size = null,
     bool Bold = false,
     string? ShowIf = null,
-    string? Color = null) : DocElement(ShowIf);
+    string? Color = null,
+    string? Font = null,
+    bool Italic = false,
+    bool Underline = false,
+    string? VerticalAlign = null,
+    float? LineHeight = null,
+    float? LetterSpacing = null,
+    string? TextTransform = null,
+    bool Strikethrough = false,
+    bool Overline = false,
+    string? BackgroundColor = null,
+    float? Padding = null,
+    bool AutoGrow = false,
+    string? Format = null,
+    string? FormatString = null,
+    float? PX = null,
+    float? PY = null,
+    float? PWidth = null,
+    float? PHeight = null) : DocElement(ShowIf);
 
 public sealed record DocTableElement(
     string Source,
@@ -62,3 +82,40 @@ public sealed record DocInvoiceSection(
     string Name,
     List<DocElement> Elements,
     string? ShowIf = null) : DocElement(ShowIf);
+
+public sealed record DocWatermarkElement(
+    string? Text = null,
+    string? Image = null,
+    float Opacity = 0.08f,
+    string? ShowIf = null) : DocElement(ShowIf);
+
+public sealed record DocRectangleElement(
+    string? FillColor = null,
+    string? BorderColor = null,
+    float? BorderWidth = null,
+    float? BorderRadius = null,
+    string? ShowIf = null,
+    float? PX = null,
+    float? PY = null,
+    float? PWidth = null,
+    float? PHeight = null) : DocElement(ShowIf);
+
+public sealed record DocEllipseElement(
+    string? FillColor = null,
+    string? BorderColor = null,
+    float? BorderWidth = null,
+    string? ShowIf = null,
+    float? PX = null,
+    float? PY = null,
+    float? PWidth = null,
+    float? PHeight = null) : DocElement(ShowIf);
+
+public sealed record DocBarcodeElement(
+    string Content,
+    string? Kind = "code128",
+    bool ShowText = false,
+    string? ShowIf = null,
+    float? PX = null,
+    float? PY = null,
+    float? PWidth = null,
+    float? PHeight = null) : DocElement(ShowIf);

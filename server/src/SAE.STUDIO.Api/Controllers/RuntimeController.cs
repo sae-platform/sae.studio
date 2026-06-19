@@ -35,6 +35,7 @@ public sealed class RuntimeController : ControllerBase
     private readonly SaeDocumentParser _docParser;
     private readonly SaeDocumentRuntimeEngine _docRuntime;
     private readonly PdfDocumentRenderer _docRenderer;
+    private readonly DocumentPrintEngine _docPrintEngine;
     private readonly SaeLabelsTemplateService _glabels;
     private readonly ILabelRenderer _labelRenderer;
 
@@ -51,6 +52,7 @@ public sealed class RuntimeController : ControllerBase
         SaeDocumentParser docParser,
         SaeDocumentRuntimeEngine docRuntime,
         PdfDocumentRenderer docRenderer,
+        DocumentPrintEngine docPrintEngine,
         SaeLabelsTemplateService glabels,
         ILabelRenderer labelRenderer)
     {
@@ -66,6 +68,7 @@ public sealed class RuntimeController : ControllerBase
         _docParser = docParser;
         _docRuntime = docRuntime;
         _docRenderer = docRenderer;
+        _docPrintEngine = docPrintEngine;
         _glabels = glabels;
         _labelRenderer = labelRenderer;
     }
@@ -358,21 +361,10 @@ public sealed class RuntimeController : ControllerBase
     {
         try
         {
-            string xml;
-
-            // Accept raw XML directly if provided in data
-            if (request.Data?.TryGetValue("xml", out var rawXml) == true && rawXml is string rawStr && rawStr.Contains("<saedocument"))
-            {
-                xml = rawStr;
-            }
-            else
-            {
-                var template = _templates.Resolve(request.Template);
-                if (template is null)
-                    return NotFound(new PdfExportResponse("", "", "",
-                        new RuntimeError("TEMPLATE_NOT_FOUND", $"Template '{request.Template}' not found")));
-                xml = template.Xml;
-            }
+            string xml = ResolveXml(request);
+            if (xml is null)
+                return NotFound(new PdfExportResponse("", "", "",
+                    new RuntimeError("TEMPLATE_NOT_FOUND", $"Template '{request.Template}' not found")));
 
             var doc = _docParser.Parse(xml);
             var context = new DocumentContext { Variables = request.Data ?? new() };
@@ -387,6 +379,56 @@ public sealed class RuntimeController : ControllerBase
             return StatusCode(500, new PdfExportResponse("", "", "",
                 new RuntimeError("INTERNAL_ERROR", ex.Message)));
         }
+    }
+
+    [HttpPost("documents/print")]
+    public async Task<IActionResult> PrintDocument([FromBody] PdfExportRequest request, [FromQuery] string printer)
+    {
+        try
+        {
+            var xml = ResolveXml(request);
+            if (xml is null)
+                return NotFound(new { error = "TEMPLATE_NOT_FOUND", message = $"Template '{request.Template}' not found" });
+
+            var doc = _docParser.Parse(xml);
+            var context = new DocumentContext { Variables = request.Data ?? new() };
+            var resolved = _docRuntime.Process(doc, context);
+            var pdfBytes = _docRenderer.Render(resolved, request.Data ?? new());
+
+            var printerName = !string.IsNullOrWhiteSpace(printer) ? printer : "Microsoft Print to PDF";
+            var success = await _docPrintEngine.PrintAsync(pdfBytes, printerName);
+            return Ok(new { success, printer = printerName });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = "PRINT_ERROR", message = ex.Message });
+        }
+    }
+
+    [HttpGet("printers")]
+    public IActionResult GetPrinters()
+    {
+        return Ok(DocumentPrintEngine.GetPrinters());
+    }
+
+    private string? ResolveXml(PdfExportRequest request)
+    {
+        if (request.Data?.TryGetValue("xml", out var rawXmlValue) == true)
+        {
+            var xmlStr = rawXmlValue is string s ? s
+                       : rawXmlValue is System.Text.Json.JsonElement je ? je.GetString()
+                       : null;
+            if (xmlStr?.Contains("<saedocument") == true)
+                return xmlStr;
+        }
+        return ResolveFromTemplate(request.Template);
+    }
+
+    private string? ResolveFromTemplate(string? templateName)
+    {
+        if (string.IsNullOrWhiteSpace(templateName)) return null;
+        var template = _templates.Resolve(templateName);
+        return template?.Xml;
     }
 
     private static Dictionary<string, string> ToStringDictionary(Dictionary<string, object?> source)

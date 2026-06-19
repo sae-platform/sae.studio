@@ -55,6 +55,7 @@ export interface SaeDocumentModel {
   variables: VariableDef[];
   pages: PageDef[];
   embeddedTheme?: import("./theme").DocumentTheme;
+  componentLibrary?: import("./elements").ComponentDef[];
 }
 
 // ── Factory ──────────────────────────────────────────────────

@@ -22,6 +22,8 @@ export interface PageDef {
   header?: BandDef;
   body?: BandDef;
   footer?: BandDef;
+  /** Data-driven repeating bands */
+  dataBands?: BandDef[];
   /** Layers ordered by zIndex ascending */
   layers: LayerDef[];
 }

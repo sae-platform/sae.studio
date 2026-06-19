@@ -3,7 +3,7 @@ import {
   Barcode, QrCode, Table2,
   DollarSign, Hash, Variable,
   LayoutPanelLeft, Group, GitBranch, Repeat2,
-  FileDown, Scissors, Plus,
+  FileDown, Scissors, Plus, Database,
 } from "lucide-react";
 
 interface PaletteItem {
@@ -38,15 +38,18 @@ const PALETTE_ITEMS: PaletteItem[] = [
   // Página
   { id: "pagebreak",   label: "Salto Página",icon: FileDown,        group: "Página",   defaultWidth: 180, defaultHeight: 4  },
   { id: "sectionbreak",label: "Salto Sección",icon: Scissors,      group: "Página",   defaultWidth: 180, defaultHeight: 4  },
+  // Datos
+  { id: "databand",    label: "Banda Datos", icon: Database,        group: "Página",   defaultWidth: 0,   defaultHeight: 0  },
 ];
 
 const GROUPS = ["Básicos", "Datos", "Negocio", "Lógica", "Página"];
 
 interface DocumentPaletteProps {
   onAddPage: () => void;
+  onAddDataBand?: () => void;
 }
 
-export function DocumentPalette({ onAddPage }: DocumentPaletteProps) {
+export function DocumentPalette({ onAddPage, onAddDataBand }: DocumentPaletteProps) {
   const handleDragStart = (e: React.DragEvent, item: PaletteItem) => {
     e.dataTransfer.setData("element-type", item.id);
     e.dataTransfer.setData("element-width", String(item.defaultWidth));
@@ -88,6 +91,12 @@ export function DocumentPalette({ onAddPage }: DocumentPaletteProps) {
           <Plus size={13} />
           <span>Agregar página</span>
         </button>
+        {onAddDataBand && (
+          <button type="button" className="docPaletteItem docPaletteItem--action" onClick={onAddDataBand} style={{ marginTop: 4 }}>
+            <Database size={13} />
+            <span>Agregar Banda Datos</span>
+          </button>
+        )}
       </div>
     </aside>
   );

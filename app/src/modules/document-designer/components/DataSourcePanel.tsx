@@ -60,12 +60,22 @@ export function DataSourcePanel({ doc, sampleJson, onSampleJsonChange, onDocChan
         <div className="docDsSectionTitle" style={{ cursor: "default" }}>
           Fuentes de datos ({doc.datasources.length})
         </div>
-        {doc.datasources.map((ds, i) => (
-          <div key={i} className="docDsItem">
-            <span className="docDsName">{ds.name}</span>
-            <span className="docDsType">{ds.type}</span>
-          </div>
-        ))}
+          {doc.datasources.map((ds, i) => (
+            <div
+              key={i}
+              className="docDsItem"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("datasource-name", ds.name);
+                e.dataTransfer.effectAllowed = "link";
+              }}
+              title={`Arrastrar al canvas para crear DataBand "${ds.name}"`}
+              style={{ cursor: "grab" }}
+            >
+              <span className="docDsName">🗂 {ds.name}</span>
+              <span className="docDsType">{ds.type}</span>
+            </div>
+          ))}
         <button
           type="button"
           className="docColAdd"

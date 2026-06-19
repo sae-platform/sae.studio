@@ -1,4 +1,6 @@
 using System.Xml.Linq;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace SAE.STUDIO.Core.Labels.Printing.Documents;
 
@@ -8,6 +10,51 @@ namespace SAE.STUDIO.Core.Labels.Printing.Documents;
 /// </summary>
 public sealed class SaeDocumentParser
 {
+    private readonly XmlSchemaSet? _schemas;
+
+    public SaeDocumentParser(string? schemasDir = null)
+    {
+        if (schemasDir is not null && Directory.Exists(schemasDir))
+        {
+            var xsdPath = Path.Combine(schemasDir, "saedocument.xsd");
+            if (File.Exists(xsdPath))
+            {
+                _schemas = new XmlSchemaSet();
+                _schemas.Add(null, xsdPath);
+            }
+        }
+    }
+
+    public (bool valid, List<string> errors) Validate(string xml)
+    {
+        var errors = new List<string>();
+        if (_schemas is null) return (true, errors);
+
+        try
+        {
+            var settings = new XmlReaderSettings
+            {
+                ValidationType = ValidationType.Schema,
+                Schemas = _schemas,
+                DtdProcessing = DtdProcessing.Prohibit,
+            };
+            settings.ValidationEventHandler += (_, e) =>
+            {
+                errors.Add($"Línea {e.Exception?.LineNumber}: {e.Message}");
+            };
+
+            using var sr = new StringReader(xml);
+            using var reader = XmlReader.Create(sr, settings);
+            while (reader.Read()) { }
+        }
+        catch (XmlException ex)
+        {
+            errors.Add($"XML inválido: Línea {ex.LineNumber}: {ex.Message}");
+        }
+
+        return (errors.Count == 0, errors);
+    }
+
     public SaeDocument Parse(string xml)
     {
         var doc = XDocument.Parse(xml);
@@ -39,6 +86,16 @@ public sealed class SaeDocumentParser
         {
             if (section.Name.LocalName is "setup") continue;
             result.Elements.Add(ParseElement(section));
+        }
+
+        // Parse watermarks
+        foreach (var wm in root.Elements("watermark"))
+        {
+            result.Watermarks.Add(new DocWatermarkElement(
+                Attr(wm, "text"),
+                Attr(wm, "source"),
+                ParseFloat(Attr(wm, "opacity")) ?? 0.08f,
+                Attr(wm, "showIf")));
         }
 
         return result;
@@ -113,19 +170,38 @@ public sealed class SaeDocumentParser
     {
         var showIf = Attr(el, "showIf");
         var tag = el.Name.LocalName;
+        var x = ParseFloat(Attr(el, "x"));
+        var y = ParseFloat(Attr(el, "y"));
+        var w = ParseFloat(Attr(el, "width"));
+        var h = ParseFloat(Attr(el, "height"));
 
         // Skip layout-only elements (no runtime rendering)
         if (tag is "layers" or "layer") return null;
 
-        return tag switch
+        DocElement? result = tag switch
         {
             "text" => new DocTextElement(
                 el.Value.Trim(),
                 Attr(el, "align") ?? "left",
-                (int?)ParseFloat(Attr(el, "size")),
+                ParseFloat(Attr(el, "size")),
                 Attr(el, "bold")?.ToLower() == "true",
                 showIf,
-                Attr(el, "color")),
+                Attr(el, "color"),
+                Attr(el, "font"),
+                Attr(el, "italic")?.ToLower() == "true",
+                Attr(el, "underline")?.ToLower() == "true",
+                Attr(el, "verticalAlign"),
+                ParseFloat(Attr(el, "lineHeight")),
+                ParseFloat(Attr(el, "letterSpacing")),
+                Attr(el, "textTransform"),
+                Attr(el, "strikethrough")?.ToLower() == "true",
+                Attr(el, "overline")?.ToLower() == "true",
+                Attr(el, "backgroundColor"),
+                ParseFloat(Attr(el, "padding")),
+                Attr(el, "autoGrow")?.ToLower() == "true",
+                Attr(el, "format"),
+                Attr(el, "formatString"),
+                PX: x, PY: y, PWidth: w, PHeight: h),
 
             "table" => new DocTableElement(
                 Attr(el, "source") ?? "ITEMS",
@@ -152,32 +228,48 @@ public sealed class SaeDocumentParser
                 Attr(el, "align"),
                 showIf),
 
-            "barcode" => new DocTextElement(
+            "barcode" => new DocBarcodeElement(
                 Attr(el, "value") ?? "",
-                Attr(el, "align") ?? "center",
-                (int?)ParseFloat(Attr(el, "size")),
-                Bold: false,
-                showIf),
+                Attr(el, "kind"),
+                Attr(el, "showText")?.ToLower() == "true",
+                showIf,
+                PX: x, PY: y, PWidth: w, PHeight: h),
 
             "total" or "subtotal" => new DocTextElement(
                 "${" + (Attr(el, "field") ?? Attr(el, "value")?.Replace("${", "").Replace("}", "") ?? "") + "}",
                 Attr(el, "align") ?? "right",
-                (int?)ParseFloat(Attr(el, "size")),
+                ParseFloat(Attr(el, "size")),
                 Attr(el, "bold")?.ToLower() == "true" || tag == "total",
                 showIf,
-                Attr(el, "color")),
+                Attr(el, "color"),
+                Attr(el, "font"),
+                PX: x, PY: y, PWidth: w, PHeight: h),
 
             "variable" => new DocTextElement(
                 "${" + (Attr(el, "variableName") ?? "") + "}",
                 Attr(el, "align") ?? "left",
-                (int?)ParseFloat(Attr(el, "size")),
+                ParseFloat(Attr(el, "size")),
                 Attr(el, "bold")?.ToLower() == "true",
                 showIf,
-                Attr(el, "color")),
+                Attr(el, "color"),
+                PX: x, PY: y, PWidth: w, PHeight: h),
 
-            "rectangle" => new DocSpacerElement(ParseFloat(Attr(el, "height")) ?? ParseFloat(Attr(el, "height")) ?? 10, showIf),
+            "rectangle" => new DocRectangleElement(
+                Attr(el, "fillColor"),
+                Attr(el, "borderColor"),
+                ParseFloat(Attr(el, "borderWidth")),
+                ParseFloat(Attr(el, "borderRadius")),
+                showIf,
+                PX: x, PY: y, PWidth: w, PHeight: h),
 
-            "spacer" or "ellipse" or "panel" or "group" => new DocSpacerElement(
+            "ellipse" => new DocEllipseElement(
+                Attr(el, "fillColor"),
+                Attr(el, "borderColor"),
+                ParseFloat(Attr(el, "borderWidth")),
+                showIf,
+                PX: x, PY: y, PWidth: w, PHeight: h),
+
+            "spacer" or "panel" or "group" => new DocSpacerElement(
                 ParseFloat(Attr(el, "height")) ?? 8, showIf),
 
             // Sections (for nested header/body/footer sections)
@@ -190,6 +282,8 @@ public sealed class SaeDocumentParser
 
             _ => null // skip unknown
         };
+
+        return result;
     }
 
     // ── Legacy element parsers (runtime format) ──────────────
@@ -197,10 +291,24 @@ public sealed class SaeDocumentParser
     private DocTextElement ParseText(XElement el) => new(
         el.Value.Trim(),
         Attr(el, "align"),
-        (int?)ParseFloat(Attr(el, "size")),
+        ParseFloat(Attr(el, "size")),
         Attr(el, "bold")?.ToLower() == "true",
         Attr(el, "showIf"),
-        Attr(el, "color"));
+        Attr(el, "color"),
+        Attr(el, "font"),
+        Attr(el, "italic")?.ToLower() == "true",
+        Attr(el, "underline")?.ToLower() == "true",
+        Attr(el, "verticalAlign"),
+        ParseFloat(Attr(el, "lineHeight")),
+        ParseFloat(Attr(el, "letterSpacing")),
+        Attr(el, "textTransform"),
+        Attr(el, "strikethrough")?.ToLower() == "true",
+        Attr(el, "overline")?.ToLower() == "true",
+        Attr(el, "backgroundColor"),
+        ParseFloat(Attr(el, "padding")),
+        Attr(el, "autoGrow")?.ToLower() == "true",
+        Attr(el, "format"),
+        Attr(el, "formatString"));
 
     private DocTableElement ParseTable(XElement el) => new(
         Attr(el, "source") ?? "ITEMS",

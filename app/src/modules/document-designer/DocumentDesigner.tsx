@@ -16,6 +16,7 @@ import { runDocument, createPreviewContext, type RenderedDocument } from "@/modu
 import { useUndoStack } from "@/modules/document-engine/history/undo-stack";
 import { useWorkspaceStore } from "@/modules/document-library/stores/workspace.store";
 import { runtimeApi } from "@/lib/api/client";
+import { groupElements, ungroupElements } from "@/modules/document-engine/group-utils";
 
 import { DocumentPalette } from "./components/DocumentPalette";
 import { DocumentProperties } from "./components/DocumentProperties";
@@ -85,7 +86,19 @@ export function DocumentDesigner() {
     setXmlText(documentXml);
   }, [documentXml]);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId]     = useState<string | null>(null);
+  const [selectedBandKey, setSelectedBandKey] = useState<string | null>(null);
+
+  const selectOne = (id: string | null) => {
+    setSelectedId(id);
+    setSelectedIds(id ? new Set([id]) : new Set());
+    setSelectedBandKey(null);
+  };
+
+  // ── Box selection state ──────────────────────────────────
+  const [boxSelect] = useState<{ l: number; t: number; r: number; b: number } | null>(null);
+
   const [pageIndex, setPageIndex]       = useState(0);
   const [activeLayerId, setActiveLayer] = useState("default");
   const [zoom, setZoom]                 = useState(1.0);
@@ -137,7 +150,7 @@ export function DocumentDesigner() {
   const selectedElement = selectedId
     ? ((): DocumentElement | null => {
         if (!page) return null;
-        for (const band of [page.header, page.body, page.footer]) {
+        for (const band of [page.header, page.body, page.footer, ...(page.dataBands ?? [])]) {
           if (!band) continue;
           const found = band.elements.find((e) => e.id === selectedId);
           if (found) return found;
@@ -145,6 +158,8 @@ export function DocumentDesigner() {
         return null;
       })()
     : null;
+
+  const selectedBand = selectedBandKey ? page?.dataBands?.find(db => `db-${db.id}` === selectedBandKey) : undefined;
 
   // ── Element drop from palette ────────────────────────────
   const handleDrop = useCallback((
@@ -293,12 +308,114 @@ export function DocumentDesigner() {
     removeTheme(id);
   }, [removeTheme]);
 
+  // ── Multi-element alignment ──────────────────────────────
+  const hasMultiSelection = selectedIds.size > 1;
+
+  const alignElements = useCallback((dir: "left" | "right" | "hcenter" | "top" | "bottom" | "vcenter") => {
+    if (!hasMultiSelection) return;
+    const page = doc.pages[pageIndex];
+    if (!page) return;
+    const targetEls: { id: string; el: DocumentElement }[] = [];
+    for (const band of [page.header, page.body, page.footer]) {
+      if (!band) continue;
+      for (const el of band.elements) if (selectedIds.has(el.id)) targetEls.push({ id: el.id, el });
+    }
+    if (targetEls.length < 2) return;
+    let refX = 0, refY = 0;
+    if (dir === "left") refX = Math.min(...targetEls.map(t => t.el.x ?? 0));
+    else if (dir === "right") refX = Math.max(...targetEls.map(t => (t.el.x ?? 0) + (t.el.width ?? 60)));
+    else if (dir === "hcenter") refX = targetEls.reduce((s, t) => s + (t.el.x ?? 0) + (t.el.width ?? 60) / 2, 0) / targetEls.length;
+    else if (dir === "top") refY = Math.min(...targetEls.map(t => t.el.y ?? 0));
+    else if (dir === "bottom") refY = Math.max(...targetEls.map(t => (t.el.y ?? 0) + (t.el.height ?? 10)));
+    else if (dir === "vcenter") refY = targetEls.reduce((s, t) => s + (t.el.y ?? 0) + (t.el.height ?? 10) / 2, 0) / targetEls.length;
+    let next = doc;
+    for (const { id, el } of targetEls) {
+      let patch: Partial<DocumentElement> = {};
+      if (dir === "left") patch = { x: refX };
+      else if (dir === "right") patch = { x: Math.round((refX - (el.width ?? 60)) * 10) / 10 };
+      else if (dir === "hcenter") patch = { x: Math.round((refX - (el.width ?? 60) / 2) * 10) / 10 };
+      else if (dir === "top") patch = { y: refY };
+      else if (dir === "bottom") patch = { y: Math.round((refY - (el.height ?? 10)) * 10) / 10 };
+      else if (dir === "vcenter") patch = { y: Math.round((refY - (el.height ?? 10) / 2) * 10) / 10 };
+      next = updateElement(next, id, patch);
+    }
+    syncDoc(next);
+  }, [doc, pageIndex, syncDoc, selectedIds, hasMultiSelection]);
+
+  const handleGroup = useCallback(() => {
+    syncDoc({
+      ...doc,
+      pages: doc.pages.map((p, i) => {
+        if (i !== pageIndex) return p;
+        const next = { ...p };
+        for (const band of ["header", "body", "footer"] as const) {
+          if (!next[band]) continue;
+          const result = groupElements(next[band]!.elements, selectedIds);
+          if (result) next[band] = { ...next[band]!, elements: result };
+        }
+        return next;
+      }),
+    });
+  }, [doc, pageIndex, syncDoc, selectedIds]);
+
+  const handleUngroup = useCallback(() => {
+    syncDoc({
+      ...doc,
+      pages: doc.pages.map((p, i) => {
+        if (i !== pageIndex) return p;
+        const next = { ...p };
+        for (const band of ["header", "body", "footer"] as const) {
+          if (!next[band]) continue;
+          const result = ungroupElements(next[band]!.elements, selectedIds);
+          if (result) next[band] = { ...next[band]!, elements: result };
+        }
+        return next;
+      }),
+    });
+  }, [doc, pageIndex, syncDoc, selectedIds]);
+
   // ── Page management ──────────────────────────────────────
   const handleAddPage = useCallback(() => {
     const next = { ...doc, pages: [...doc.pages, createPage("A4")] };
     syncDoc(next);
     setPageIndex(next.pages.length - 1);
   }, [doc, syncDoc]);
+
+  const handleAddDataBand = useCallback(() => {
+    syncDoc({
+      ...doc,
+      pages: doc.pages.map((p, i) => i === pageIndex ? {
+        ...p,
+        dataBands: [...(p.dataBands ?? []), {
+          id: crypto.randomUUID(),
+          type: "databand" as const,
+          height: 30,
+          canGrow: true,
+          canShrink: false,
+          source: "ITEMS",
+          elements: [],
+        }],
+      } : p),
+    });
+  }, [doc, pageIndex, syncDoc]);
+
+  const handleDropDataSource = useCallback((band: "header" | "body" | "footer", source: string) => {
+    syncDoc({
+      ...doc,
+      pages: doc.pages.map((p, i) => i === pageIndex ? {
+        ...p,
+        dataBands: [...(p.dataBands ?? []), {
+          id: crypto.randomUUID(),
+          type: "databand" as const,
+          height: 30,
+          canGrow: true,
+          canShrink: false,
+          source,
+          elements: [],
+        }],
+      } : p),
+    });
+  }, [doc, pageIndex, syncDoc]);
 
   const handleDuplicatePage = useCallback((i: number) => {
     const clone = { ...doc.pages[i], id: crypto.randomUUID() };
@@ -382,7 +499,7 @@ export function DocumentDesigner() {
         const a = document.createElement("a");
         a.href = url; a.download = `${doc.metadata?.title || "documento"}.bin`; a.click();
       } else {
-        alert(result?.error?.message ?? "Error al exportar ESC/POS");
+         alert(result?.error?.message ?? "Error al exportar ESC/POS");
       }
     } catch (e: any) { alert(e?.message ?? "Error de conexión con SAE.STUDIO"); }
   }, [doc]);
@@ -401,6 +518,7 @@ export function DocumentDesigner() {
       }
     } catch (e: any) { alert(e?.message ?? "Error de conexión con SAE.STUDIO"); }
   }, [doc]);
+
 
   // ── Zoom helpers ─────────────────────────────────────────
   const zoomIn  = () => setZoom((z) => Math.min(2.0, ZOOM_LEVELS[ZOOM_LEVELS.indexOf(z) + 1] ?? 2.0));
@@ -432,7 +550,7 @@ export function DocumentDesigner() {
 
         <div className="docLeftContent">
           {leftTab === "components" && (
-            <DocumentPalette onAddPage={handleAddPage} />
+            <DocumentPalette onAddPage={handleAddPage} onAddDataBand={handleAddDataBand} />
           )}
           {leftTab === "pages" && (
             <MultiPageNav
@@ -479,11 +597,47 @@ export function DocumentDesigner() {
           <button type="button" className="docToolbarBtn" onClick={undo} disabled={!hasUndo} title="Deshacer (Ctrl+Z)">
             <Undo size={15} strokeWidth={2.5} />
           </button>
-          <button type="button" className="docToolbarBtn" onClick={redo} disabled={!hasRedo} title="Rehacer (Ctrl+Y)">
+              <button type="button" className="docToolbarBtn" onClick={redo} disabled={!hasRedo} title="Rehacer (Ctrl+Y)">
             <Redo size={15} strokeWidth={2.5} />
           </button>
 
           <div className="docToolbarSep" />
+
+          {/* Group / Ungroup */}
+          <button type="button" className="docToolbarBtn" onClick={handleGroup} disabled={selectedIds.size < 2} title="Agrupar (Ctrl+G)">
+            <Layers size={15} strokeWidth={2.5} />
+          </button>
+          <button type="button" className="docToolbarBtn" onClick={handleUngroup} disabled={selectedIds.size === 0} title="Desagrupar (Ctrl+Shift+G)">
+            <LayoutGrid size={15} strokeWidth={2.5} />
+          </button>
+
+          <div className="docToolbarSep" />
+
+          {/* Multi-element alignment */}
+          {hasMultiSelection && (
+            <>
+              <button type="button" className="docToolbarBtn" onClick={() => alignElements("left")} title="Alinear izquierda">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="3" x2="5" y2="21"/><line x1="5" y1="7" x2="15" y2="7"/><line x1="5" y1="12" x2="11" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg>
+              </button>
+              <button type="button" className="docToolbarBtn" onClick={() => alignElements("hcenter")} title="Centrar horizontal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="3" x2="12" y2="21"/><line x1="4" y1="7" x2="20" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg>
+              </button>
+              <button type="button" className="docToolbarBtn" onClick={() => alignElements("right")} title="Alinear derecha">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="3" x2="19" y2="21"/><line x1="9" y1="7" x2="19" y2="7"/><line x1="13" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg>
+              </button>
+              <div className="docToolbarSep" />
+              <button type="button" className="docToolbarBtn" onClick={() => alignElements("top")} title="Alinear arriba">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="5" x2="21" y2="5"/><line x1="7" y1="5" x2="7" y2="15"/><line x1="12" y1="5" x2="12" y2="11"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+              </button>
+              <button type="button" className="docToolbarBtn" onClick={() => alignElements("vcenter")} title="Centrar vertical">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="4" x2="7" y2="20"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+              </button>
+              <button type="button" className="docToolbarBtn" onClick={() => alignElements("bottom")} title="Alinear abajo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="19" x2="21" y2="19"/><line x1="7" y1="9" x2="7" y2="19"/><line x1="12" y1="13" x2="12" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+              </button>
+              <div className="docToolbarSep" />
+            </>
+          )}
 
           {/* Zoom */}
           <button type="button" className="docToolbarBtn" onClick={zoomOut} title="Alejar"><ZoomOut size={15} strokeWidth={2.5} /></button>
@@ -541,14 +695,31 @@ export function DocumentDesigner() {
               scale={scale}
               zoom={zoom}
               selectedId={selectedId}
-              onSelect={(id) => { setSelectedId(id); if (!id) return; }}
-              onSelectPage={() => { setSelectedId(null); }}
+              selectedIds={selectedIds}
+              onSelect={(id) => { selectOne(id); if (!id) return; }}
+              onToggleSelect={(id) => {
+                setSelectedIds(prev => {
+                  const next = new Set(prev);
+                  if (next.has(id)) { next.delete(id); if (selectedId === id) setSelectedId(null); }
+                  else next.add(id);
+                  return next;
+                });
+              }}
+              onSelectPage={() => { selectOne(null); }}
               onMove={handleMove}
               onResize={handleResize}
               onBandResize={handleBandResize}
+              onElementChange={handleElementChange}
               onDrop={handleDrop}
+              onDropDataSource={handleDropDataSource}
+              onSelectBand={setSelectedBandKey}
               previewDoc={previewDoc}
               isPreview={viewMode === "preview"}
+              boxSelect={boxSelect}
+              onBoxSelect={(ids) => {
+                setSelectedIds(new Set(ids));
+                setSelectedId(ids.length === 1 ? ids[0] : ids.length > 0 ? ids[ids.length - 1] : null);
+              }}
             />
           </div>
         )}
@@ -557,7 +728,8 @@ export function DocumentDesigner() {
       {/* ── Right panel ───────────────────────── */}
       <DocumentProperties
         selected={selectedElement}
-        selectedPage={selectedElement ? null : page}
+        selectedPage={selectedElement ? null : selectedBand ? null : page}
+        selectedBand={selectedBand}
         onElementChange={handleElementChange}
         onPageChange={handlePageChange}
         onDelete={handleDelete}
@@ -581,28 +753,103 @@ interface PageCanvasProps {
   scale: number;
   zoom: number;
   selectedId: string | null;
+  selectedIds: Set<string>;
   onSelect: (id: string | null) => void;
+  onToggleSelect: (id: string) => void;
+  onSelectBand?: (key: string) => void;
   onSelectPage: () => void;
   onMove: (id: string, dx: number, dy: number) => void;
   onResize: (id: string, dw: number, dh: number, dx: number, dy: number) => void;
   onBandResize: (band: "header" | "body" | "footer", deltaMm: number) => void;
   onDrop: (band: "header" | "body" | "footer", type: DocumentElementType, x: number, y: number) => void;
+  onDropDataSource: (band: "header" | "body" | "footer", source: string) => void;
+  onElementChange: (patch: Partial<DocumentElement>) => void;
   previewDoc: RenderedDocument | null;
   isPreview: boolean;
+  boxSelect: { l: number; t: number; r: number; b: number } | null;
+  onBoxSelect: (ids: string[]) => void;
 }
 
 function PageCanvas({
-  page, pageIndex, scale, selectedId, onSelect, onSelectPage,
-  onMove, onResize, onBandResize, onDrop, previewDoc, isPreview,
+  page, pageIndex, scale, selectedId, selectedIds, onSelect, onToggleSelect, onSelectPage, onSelectBand,
+  onMove, onResize, onBandResize, onDrop, onDropDataSource, onElementChange, previewDoc, isPreview,
+  boxSelect, onBoxSelect,
 }: PageCanvasProps) {
   const widthPx  = page.width * scale;
   const heightPx = page.height * scale;
   const renderedPage = previewDoc?.pages[pageIndex];
+  const pageRef = useRef<HTMLDivElement>(null);
+  const dragFlag = useRef(false);
 
-  const bands: { key: "header" | "body" | "footer"; band: BandDef | undefined }[] = [
-    { key: "header", band: page.header },
-    { key: "body",   band: page.body   },
-    { key: "footer", band: page.footer },
+  const handlePageMouseDown = useCallback((e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.closest(".docCanvasEl, .docBandResize, .docBandLabel, .docPageMeta")) return;
+    if (e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
+    dragFlag.current = false;
+
+    const onMove = (me: MouseEvent) => {
+      const r = pageRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const currentX = (me.clientX - r.left) / scale;
+      const currentY = (me.clientY - r.top) / scale;
+      const dx = Math.abs(currentX - x);
+      const dy = Math.abs(currentY - y);
+      if (dx > 1 || dy > 1) dragFlag.current = true;
+      if (pageRef.current) {
+        pageRef.current.style.setProperty("--box-x1", `${Math.min(x, currentX) * scale}px`);
+        pageRef.current.style.setProperty("--box-y1", `${Math.min(y, currentY) * scale}px`);
+        pageRef.current.style.setProperty("--box-x2", `${Math.max(x, currentX) * scale}px`);
+        pageRef.current.style.setProperty("--box-y2", `${Math.max(y, currentY) * scale}px`);
+      }
+    };
+
+    const onUp = (me: MouseEvent) => {
+      const r = pageRef.current?.getBoundingClientRect();
+      if (!r) { cleanup(); return; }
+      const endX = (me.clientX - r.left) / scale;
+      const endY = (me.clientY - r.top) / scale;
+
+      if (dragFlag.current) {
+        const area = { l: Math.min(x, endX), t: Math.min(y, endY), r: Math.max(x, endX), b: Math.max(y, endY) };
+        const ids: string[] = [];
+        for (const band of [...[page.header, page.body, page.footer].filter(Boolean), ...(page.dataBands ?? [])]) {
+          if (!band) continue;
+          for (const el of band.elements) {
+            if (el.hidden) continue;
+            const r2 = { l: el.x ?? 0, t: el.y ?? 0, r: (el.x ?? 0) + (el.width ?? 60), b: (el.y ?? 0) + (el.height ?? 10) };
+            if (area.l < r2.r && area.r > r2.l && area.t < r2.b && area.b > r2.t) ids.push(el.id);
+          }
+        }
+        onBoxSelect(ids);
+      } else {
+        onSelect(null);
+      }
+      cleanup();
+    };
+
+    const cleanup = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      if (pageRef.current) {
+        pageRef.current.style.removeProperty("--box-x1");
+        pageRef.current.style.removeProperty("--box-y1");
+        pageRef.current.style.removeProperty("--box-x2");
+        pageRef.current.style.removeProperty("--box-y2");
+      }
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [scale, page, onSelect, onBoxSelect]);
+
+  const allBands = [
+    { key: "header", band: page.header, isDataBand: false },
+    { key: "body",   band: page.body,   isDataBand: false },
+    ...(page.dataBands ?? []).map(db => ({ key: `db-${db.id}`, band: db, isDataBand: true })),
+    { key: "footer", band: page.footer, isDataBand: false },
   ];
 
   return (
@@ -613,25 +860,40 @@ function PageCanvas({
       </div>
 
       <div
+        ref={pageRef}
         className="docPage"
         style={{ width: widthPx, height: heightPx }}
-        onClick={onSelectPage}
+        onMouseDown={handlePageMouseDown}
       >
-        {bands.map(({ key, band }, i) => {
+        {allBands.map((item, i) => {
+          const { key, band } = item;
+          const isDataBand = "isDataBand" in item && item.isDataBand;
           if (!band) return null;
+          const isLast = i === allBands.length - 1;
           return (
             <BandCanvas
               key={key}
               band={band}
               scale={scale}
               selectedId={selectedId}
+              selectedIds={selectedIds}
               onSelect={onSelect}
+              onToggleSelect={onToggleSelect}
               onMove={onMove}
               onResize={onResize}
-              onBandResize={(delta) => onBandResize(key, delta)}
-              onDrop={(type, x, y) => onDrop(key, type, x, y)}
-              renderedBand={renderedPage?.[key]}
-              showResizeHandle={i < bands.length - 1}
+              onBandResize={(delta) => {
+                if (isDataBand) return;
+                onBandResize(key as any, delta);
+              }}
+              onDrop={(type, x, y) => {
+                if (isDataBand) return;
+                onDrop(key as any, type, x, y);
+              }}
+              onDropDataSource={onDropDataSource ? (source) => onDropDataSource(key as any, source) : undefined}
+              onSelectBand={() => onSelectBand?.(key)}
+              onElementChange={onElementChange}
+              renderedBand={isDataBand ? undefined : (renderedPage as any)?.[key]}
+              showResizeHandle={!isDataBand && !isLast}
             />
           );
         })}

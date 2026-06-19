@@ -8,7 +8,7 @@ import type { PageDef, PageUnit } from "../models/page";
 import { PAGE_PRESETS } from "../models/page";
 import type { BandDef, BandType } from "../models/band";
 import type { LayerDef } from "../models/layer";
-import type { DocumentElement, TableColumnDef } from "../models/elements";
+import type { DocumentElement, TableColumnDef, ComponentDef } from "../models/elements";
 import type { DocumentTheme, ElementStyle } from "../models/theme";
 
 // ── PARSE ─────────────────────────────────────────────────────
@@ -103,6 +103,8 @@ function parseElement(node: Element): DocumentElement | null {
     hidden: attrBool(node, "hidden"),
     preset: attr(node, "preset") || undefined,
     anchor: attr(node, "anchor") ? attr(node, "anchor").split(",") as any[] : undefined,
+    rotation: node.hasAttribute("rotation") ? attrNum(node, "rotation", 0) : undefined,
+    styleRules: parseStyleRules(node),
   };
 
   switch (node.tagName) {
@@ -110,13 +112,26 @@ function parseElement(node: Element): DocumentElement | null {
       return {
         ...base, type: "text",
         content: node.textContent?.trim() ?? "",
+        value: attr(node, "value") || undefined,
         font: attr(node, "font") || undefined,
         size: node.hasAttribute("size") ? attrNum(node, "size", 10) : undefined,
         bold: attrBool(node, "bold"),
         italic: attrBool(node, "italic"),
         underline: attrBool(node, "underline"),
+        strikethrough: attrBool(node, "strikethrough"),
+        overline: attrBool(node, "overline"),
         align: (attr(node, "align") as any) || undefined,
         color: attr(node, "color") || undefined,
+        verticalAlign: (attr(node, "verticalAlign") as any) || undefined,
+        lineHeight: node.hasAttribute("lineHeight") ? attrNum(node, "lineHeight", 1.3) : undefined,
+        letterSpacing: node.hasAttribute("letterSpacing") ? attrNum(node, "letterSpacing", 0) : undefined,
+        textTransform: (attr(node, "textTransform") as any) || undefined,
+        backgroundColor: attr(node, "backgroundColor") || undefined,
+        padding: node.hasAttribute("padding") ? attrNum(node, "padding", 0) : undefined,
+        autoGrow: attrBool(node, "autoGrow"),
+        autoShrink: attrBool(node, "autoShrink"),
+        format: attr(node, "format") || undefined,
+        formatString: attr(node, "formatString") || undefined,
       };
 
     case "image":
@@ -268,6 +283,9 @@ function parseElement(node: Element): DocumentElement | null {
     case "sectionbreak":
       return { ...base, type: "sectionbreak" };
 
+    case "include":
+      return { ...base, type: "include", component: attr(node, "component") || "" } as DocumentElement;
+
     default:
       return null;
   }
@@ -278,7 +296,7 @@ const ELEMENT_TAGS = new Set([
   "barcode", "qr", "table",
   "total", "subtotal", "variable",
   "panel", "group", "if", "repeat",
-  "pagebreak", "sectionbreak",
+  "pagebreak", "sectionbreak", "include",
 ]);
 
 function parseElements(container: Element): DocumentElement[] {
@@ -288,14 +306,34 @@ function parseElements(container: Element): DocumentElement[] {
     .filter((e): e is DocumentElement => e !== null);
 }
 
+function parseStyleRules(el: Element): DocumentElement["styleRules"] {
+  const rules = children(el, "styleRule");
+  if (rules.length === 0) return undefined;
+  return rules.map(r => ({
+    expr: attr(r, "expr") || "true",
+    color: attr(r, "color") || undefined,
+    size: r.hasAttribute("size") ? attrNum(r, "size", 10) : undefined,
+    bold: attrBool(r, "bold", false) || undefined,
+    italic: attrBool(r, "italic", false) || undefined,
+    underline: attrBool(r, "underline", false) || undefined,
+    strikethrough: attrBool(r, "strikethrough", false) || undefined,
+    backgroundColor: attr(r, "backgroundColor") || undefined,
+    textTransform: attr(r, "textTransform") || undefined,
+    visible: attrBool(r, "visible", true) ? undefined : false,
+    format: attr(r, "format") || undefined,
+    formatString: attr(r, "formatString") || undefined,
+  }));
+}
+
 function parseBand(el: Element | null, type: BandType): BandDef | undefined {
   if (!el) return undefined;
   return {
     id: attr(el, "id") || crypto.randomUUID(),
     type,
-    height: attrNum(el, "height", type === "header" ? 40 : type === "footer" ? 35 : 180),
-    canGrow: attrBool(el, "canGrow", type === "body"),
+    height: attrNum(el, "height", type === "header" ? 40 : type === "footer" ? 35 : type === "databand" ? 30 : 180),
+    canGrow: attrBool(el, "canGrow", type === "body" || type === "databand"),
     canShrink: attrBool(el, "canShrink", false),
+    source: attr(el, "source") || undefined,
     elements: parseElements(el),
   };
 }
@@ -315,6 +353,7 @@ function parsePage(el: Element): PageDef {
     header: parseBand(children(el, "header")[0] ?? null, "header"),
     body:   parseBand(children(el, "body")[0] ?? null, "body"),
     footer: parseBand(children(el, "footer")[0] ?? null, "footer"),
+    dataBands: children(el, "dataBand").length > 0 ? children(el, "dataBand").map(d => parseBand(d, "databand"))!.filter(Boolean) as BandDef[] : undefined,
     layers: parseLayers(layersEl),
   };
 }
@@ -397,9 +436,11 @@ function parseRuntimeDocument(root: Element): SaeDocumentModel {
           width: width - marginLeft - marginRight - 20,
           height: attrNum(child, "height", 8),
           content,
-          font: "Arial",
+          font: attr(child, "font") || "Arial",
           size: attrNum(child, "size", 10),
           bold: attrBool(child, "bold"),
+          italic: attrBool(child, "italic"),
+          underline: attrBool(child, "underline"),
           align: (attr(child, "align") as any) || "left",
           color: attr(child, "color") || "#1e293b",
         });
@@ -502,6 +543,14 @@ function parseRuntimeDocument(root: Element): SaeDocumentModel {
   };
 }
 
+function parseComponentLibrary(el: Element): ComponentDef[] {
+  return children(el, "component").map(c => ({
+    id: attr(c, "id") || crypto.randomUUID(),
+    name: attr(c, "name") || "Sin nombre",
+    elements: parseElements(c),
+  }));
+}
+
 export function parseXml(xml: string): SaeDocumentModel | null {
   try {
     const parser = new DOMParser();
@@ -513,6 +562,7 @@ export function parseXml(xml: string): SaeDocumentModel | null {
     const designPages = children(root, "page");
     if (designPages.length > 0) {
       // Design-time format: <page> elements
+      const compLib = children(root, "componentLibrary")[0] ?? null;
       return {
         version: attr(root, "version") || "2.0",
         metadata: parseMetadata(children(root, "metadata")[0] ?? null),
@@ -521,6 +571,7 @@ export function parseXml(xml: string): SaeDocumentModel | null {
         variables: parseVariables(children(root, "variables")[0] ?? null),
         pages: designPages.map(parsePage),
         embeddedTheme: parseTheme(children(root, "theme")[0] ?? null),
+        componentLibrary: compLib ? parseComponentLibrary(compLib) : undefined,
       };
     }
 
@@ -550,16 +601,27 @@ function serializeElement(doc: Document, el: DocumentElement): Element {
     height: el.height,
     showIf: el.showIf,
     layerId: el.layerId,
-    lock: el.locked || undefined,
+    locked: el.locked || undefined,
     hidden: el.hidden || undefined,
     preset: el.preset || undefined,
     anchor: el.anchor?.join(",") || undefined,
+    rotation: el.rotation || undefined,
   };
   setAttrs(node, base as any);
 
   switch (el.type) {
     case "text":
-      setAttrs(node, { font: el.font, size: el.size, bold: el.bold || undefined, italic: el.italic || undefined, underline: el.underline || undefined, align: el.align, color: el.color });
+      setAttrs(node, {
+        value: (el as any).value, font: el.font, size: el.size,
+        bold: el.bold || undefined, italic: el.italic || undefined,
+        underline: el.underline || undefined, strikethrough: (el as any).strikethrough || undefined,
+        overline: (el as any).overline || undefined, align: el.align, color: el.color,
+        verticalAlign: (el as any).verticalAlign, lineHeight: (el as any).lineHeight,
+        letterSpacing: (el as any).letterSpacing, textTransform: (el as any).textTransform,
+        backgroundColor: (el as any).backgroundColor, padding: (el as any).padding,
+        autoGrow: (el as any).autoGrow || undefined, autoShrink: (el as any).autoShrink || undefined,
+        format: (el as any).format, formatString: (el as any).formatString,
+      });
       node.textContent = el.content;
       break;
     case "image":
@@ -618,13 +680,34 @@ function serializeElement(doc: Document, el: DocumentElement): Element {
       setAttrs(node, { source: el.source, direction: el.direction, gap: el.gap });
       for (const child of el.elements) node.appendChild(serializeElement(doc, child));
       break;
+    case "include":
+      node.setAttribute("component", (el as any).component);
+      break;
   }
+
+  // Serialize style rules
+  if ((el as any).styleRules?.length) {
+    for (const rule of (el as any).styleRules) {
+      const r = doc.createElement("styleRule");
+      setAttrs(r, {
+        expr: rule.expr, color: rule.color, size: rule.size,
+        bold: rule.bold || undefined, italic: rule.italic || undefined,
+        underline: rule.underline || undefined, strikethrough: rule.strikethrough || undefined,
+        backgroundColor: rule.backgroundColor, textTransform: rule.textTransform,
+        visible: rule.visible === false ? "false" : undefined,
+        format: rule.format, formatString: rule.formatString,
+      });
+      node.appendChild(r);
+    }
+  }
+
   return node;
 }
 
 function serializeBand(doc: Document, band: BandDef): Element {
-  const el = doc.createElement(band.type);
-  setAttrs(el, { id: band.id, height: band.height, canGrow: band.canGrow || undefined, canShrink: band.canShrink || undefined });
+  const tag = band.type === "databand" ? "dataBand" : band.type;
+  const el = doc.createElement(tag);
+  setAttrs(el, { id: band.id, height: band.height, canGrow: band.canGrow || undefined, canShrink: band.canShrink || undefined, source: band.source });
   for (const item of band.elements) el.appendChild(serializeElement(doc, item));
   return el;
 }
@@ -650,6 +733,9 @@ function serializePage(doc: Document, page: PageDef): Element {
   if (page.header) el.appendChild(serializeBand(doc, page.header));
   if (page.body)   el.appendChild(serializeBand(doc, page.body));
   if (page.footer) el.appendChild(serializeBand(doc, page.footer));
+  if (page.dataBands) {
+    for (const db of page.dataBands) el.appendChild(serializeBand(doc, db));
+  }
   return el;
 }
 
@@ -707,6 +793,21 @@ export function serializeXml(model: SaeDocumentModel): string {
     vars.appendChild(n);
   }
   root.appendChild(vars);
+
+  // Component Library
+  if (model.componentLibrary && model.componentLibrary.length > 0) {
+    const cl = doc.createElement("componentLibrary");
+    for (const comp of model.componentLibrary) {
+      const c = doc.createElement("component");
+      setAttrs(c, { id: comp.id, name: comp.name });
+      for (const el of comp.elements) {
+        const e = serializeElement(doc, el);
+        if (e) c.appendChild(e);
+      }
+      cl.appendChild(c);
+    }
+    root.appendChild(cl);
+  }
 
   // Theme
   if (model.embeddedTheme) {

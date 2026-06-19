@@ -241,13 +241,13 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
 
   // Auto-save Label
   useEffect(() => {
-    if (!autoSaveEnabled || !labelDocId) return;
+    if (!autoSaveEnabled || !labelXml) return;
     const s = getStore();
     s.setSaveStatus("modified");
     const timer = setTimeout(async () => {
       try {
         getStore().setSaveStatus("saving");
-        await editorApi.saveDocument({ id: labelDocId, name: labelDocName, kind: docKind === "saetickets" ? "sae" : docKind, xml: labelXml });
+    await editorApi.saveDocument({ id: labelDocId || undefined, name: labelDocName, kind: docKind === "saetickets" ? "sae" : docKind, xml: labelXml });
         getStore().setSaveStatus("saved");
       } catch { getStore().setSaveStatus("error"); }
     }, 2000);
@@ -256,13 +256,13 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
 
   // Auto-save Ticket
   useEffect(() => {
-    if (!autoSaveEnabled || !ticketDocId) return;
+    if (!autoSaveEnabled || !ticketXml) return;
     const s = getStore();
     s.setSaveStatus("modified");
     const timer = setTimeout(async () => {
       try {
         getStore().setSaveStatus("saving");
-        await editorApi.saveDocument({ id: ticketDocId, name: ticketDocName, kind: "saetickets", xml: ticketXml });
+        await editorApi.saveDocument({ id: ticketDocId || undefined, name: ticketDocName, kind: "saetickets", xml: ticketXml });
         getStore().setSaveStatus("saved");
       } catch { getStore().setSaveStatus("error"); }
     }, 2000);
@@ -271,13 +271,14 @@ export function useDocumentPersistence(opts: UseDocumentPersistenceOptions): Per
 
   // Auto-save Document
   useEffect(() => {
-    if (!autoSaveEnabled || !documentDocId) return;
+    if (!autoSaveEnabled || !documentXml) return;
     const s = getStore();
     s.setSaveStatus("modified");
     const timer = setTimeout(async () => {
       try {
         getStore().setSaveStatus("saving");
-        await editorApi.saveDocument({ id: documentDocId, name: documentDocName, kind: "saedocument", xml: documentXml });
+        const res = await editorApi.saveDocument({ id: documentDocId || undefined, name: documentDocName, kind: "saedocument", xml: documentXml });
+        if (!documentDocId) getStore().setDocumentDocId(res.id);
         getStore().setSaveStatus("saved");
       } catch { getStore().setSaveStatus("error"); }
     }, 2000);

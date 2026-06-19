@@ -25,6 +25,24 @@ export interface BaseElement {
   locked?: boolean;
   hidden?: boolean;
   preset?: string;
+  rotation?: number;
+  /** Conditional formatting rules evaluated in order, first match wins */
+  styleRules?: ConditionalRule[];
+}
+
+export interface ConditionalRule {
+  expr: string;
+  color?: string;
+  size?: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  backgroundColor?: string;
+  textTransform?: string;
+  visible?: boolean;
+  format?: string;
+  formatString?: string;
 }
 
 // ── Basic Elements ──────────────────────────────────────────
@@ -39,6 +57,19 @@ export interface TextElement extends BaseElement {
   underline?: boolean;
   align?: "left" | "center" | "right" | "justify";
   color?: string;
+  verticalAlign?: "top" | "middle" | "bottom";
+  lineHeight?: number;
+  letterSpacing?: number;
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  strikethrough?: boolean;
+  overline?: boolean;
+  backgroundColor?: string;
+  padding?: number;
+  autoGrow?: boolean;
+  autoShrink?: boolean;
+  format?: string;
+  formatString?: string;
+  value?: string;
 }
 
 export interface ImageElement extends BaseElement {
@@ -183,6 +214,21 @@ export interface SectionBreakElement extends BaseElement {
   type: "sectionbreak";
 }
 
+// ── Include / Component Element ───────────────────────────────
+
+export interface IncludeElement extends BaseElement {
+  type: "include";
+  component: string;
+}
+
+// ── Component Definition ────────────────────────────────────────
+
+export interface ComponentDef {
+  id: string;
+  name: string;
+  elements: DocumentElement[];
+}
+
 // ── Discriminated Union ──────────────────────────────────────
 
 export type DocumentElement =
@@ -202,7 +248,8 @@ export type DocumentElement =
   | IfElement
   | RepeatElement
   | PageBreakElement
-  | SectionBreakElement;
+  | SectionBreakElement
+  | IncludeElement;
 
 export type DocumentElementType = DocumentElement["type"];
 
@@ -220,5 +267,5 @@ export const PRIMITIVE_ELEMENT_TYPES = [
   "barcode", "qr", "table",
   "total", "subtotal", "variable",
   "panel", "group", "if", "repeat",
-  "pagebreak", "sectionbreak",
+  "pagebreak", "sectionbreak", "include",
 ] as const satisfies DocumentElementType[];

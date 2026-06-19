@@ -287,6 +287,20 @@
   overflow: hidden;
 }
 
+.docPage::after {
+  content: "";
+  position: absolute;
+  left: var(--box-x1, 0);
+  top: var(--box-y1, 0);
+  width: calc(var(--box-x2, 0) - var(--box-x1, 0));
+  height: calc(var(--box-y2, 0) - var(--box-y1, 0));
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px dashed rgba(15, 118, 110, 0.4);
+  pointer-events: none;
+  display: none;
+}
+.docPage[style*="--box-x1"]::after { display: block; }
+
 /* ── Bands ───────────────────────────────────────────────── */
 
 .docBandWrap {
@@ -304,6 +318,12 @@
 .docBandCanvas--header { }
 .docBandCanvas--body   { }
 .docBandCanvas--footer { }
+.docBandCanvas--databand {
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 9px,
+    rgba(15, 118, 110, 0.04) 9px, rgba(15, 118, 110, 0.04) 10px
+  );
+}
 
 /* Hide editing decorations in preview mode */
 .docPageWrap--preview .docPageMeta,
@@ -1232,6 +1252,8 @@
 }
 
 [data-theme="dark"] .docPaletteItem:hover {
+  background: #1e2d42;
+}
 
 [data-theme="dark"] .docXmlEditor {
   background: #0b1120;
@@ -1253,3 +1275,193 @@
   .docPaletteItem span { display: none; }
   .docPaletteItem { justify-content: center; }
 }
+
+/* ── Properties UI Improvements ────────────────────────────── */
+
+.docColorPickerWrapper {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  border: 1px solid var(--border, #d9e2ec) !important;
+  border-radius: 7px !important;
+  background: var(--surface, #ffffff) !important;
+  padding: 0.2rem 0.5rem !important;
+  transition: border-color 0.12s, box-shadow 0.12s !important;
+}
+.docColorPickerWrapper:focus-within {
+  border-color: var(--accent, #0f766e) !important;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1) !important;
+}
+.docColorInput {
+  width: 24px !important;
+  height: 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+.docColorInput::-webkit-color-swatch-wrapper { padding: 0 !important; }
+.docColorInput::-webkit-color-swatch { border: 1px solid #cbd5e1 !important; border-radius: 4px !important; }
+.docColorLabel {
+  font-size: 0.75rem !important;
+  color: var(--text, #0f172a) !important;
+  font-family: monospace !important;
+  text-transform: uppercase !important;
+}
+[data-theme="dark"] .docColorPickerWrapper { background: #0b1120 !important; border-color: #1e2d42 !important; }
+[data-theme="dark"] .docColorLabel { color: #e2e8f0 !important; }
+[data-theme="dark"] .docColorInput::-webkit-color-swatch { border-color: #334155 !important; }
+
+.docToggleGroup {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0.35rem !important;
+  background: transparent !important;
+  border: none !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.docToggleBtn {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 32px !important;
+  background: transparent !important;
+  border: 1px solid var(--border, #d9e2ec) !important;
+  border-radius: 6px !important;
+  color: var(--muted, #64748b) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+.docToggleBtn:hover { background: var(--surface-alt, #f1f5f9) !important; color: var(--text, #0f172a) !important; }
+.docToggleBtn.active { 
+  background: var(--surface-alt, #e2e8f0) !important; 
+  border-color: #cbd5e1 !important; 
+  color: var(--text, #0f172a) !important; 
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06) !important; 
+}
+[data-theme="dark"] .docToggleGroup { background: transparent !important; border-color: transparent !important; }
+[data-theme="dark"] .docToggleBtn { border-color: #334155 !important; color: #94a3b8 !important; }
+[data-theme="dark"] .docToggleBtn:hover { background: #1e2d42 !important; color: #f1f5f9 !important; border-color: #475569 !important; }
+[data-theme="dark"] .docToggleBtn.active { 
+  background: #334155 !important; 
+  border-color: #475569 !important; 
+  color: #ffffff !important; 
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3) !important; 
+}
+
+/* ── Toggle Switch ─────────────────────────────────────────── */
+.docSwitchWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+}
+.docSwitchInput {
+  display: none !important;
+}
+.docSwitchTrack {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  background: var(--border, #cbd5e1);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+.docSwitchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.docSwitchInput:checked + .docSwitchTrack {
+  background: var(--accent, #0f766e);
+}
+.docSwitchInput:checked + .docSwitchTrack .docSwitchThumb {
+  transform: translateX(12px);
+}
+.docSwitchLabel {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text, #0f172a);
+}
+[data-theme="dark"] .docSwitchTrack { background: #334155; }
+[data-theme="dark"] .docSwitchThumb { background: #94a3b8; }
+[data-theme="dark"] .docSwitchInput:checked + .docSwitchTrack { background: #14b8a6; }
+[data-theme="dark"] .docSwitchInput:checked + .docSwitchTrack .docSwitchThumb { background: #ffffff; }
+[data-theme="dark"] .docSwitchLabel { color: #e2e8f0; }
+
+/* ── Font Picker ───────────────────────────────────────────── */
+.docFontPicker {
+  position: relative;
+}
+.docFontPickerInputRow {
+  display: flex;
+  gap: 0;
+}
+.docFontInput {
+  flex: 1;
+  border-radius: 6px 0 0 6px !important;
+}
+.docFontBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #d9e2ec);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  color: var(--text, #0f172a);
+  cursor: pointer;
+}
+.docFontDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #d9e2ec);
+  border-radius: 8px;
+  margin-top: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+.docFontItem {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text, #1e293b);
+  transition: background 0.1s;
+}
+.docFontItem:hover { background: var(--surface-alt, #f1f5f9); }
+.docFontItem.active { background: var(--accent, #f0fdf4); color: var(--text, #0f172a); font-weight: bold; }
+.docFontEmpty { padding: 8px 10px; font-size: 0.75rem; color: var(--muted, #94a3b8); }
+
+[data-theme="dark"] .docFontBtn { background: #0b1120; border-color: #1e2d42; color: #e2e8f0; }
+[data-theme="dark"] .docFontBtn:hover { background: #1e2d42; }
+[data-theme="dark"] .docFontDropdown { background: #0b1120; border-color: #1e2d42; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+[data-theme="dark"] .docFontItem { color: #e2e8f0; }
+[data-theme="dark"] .docFontItem:hover { background: #1e2d42; }
+[data-theme="dark"] .docFontItem.active { background: #14b8a6; color: #ffffff; }

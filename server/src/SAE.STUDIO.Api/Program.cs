@@ -192,7 +192,13 @@ builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Contracts.IPrinter
     SAE.STUDIO.Core.Labels.Printing.Services.PrinterDiscoveryService>();
 builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Parsers.TicketXmlParser>();
 builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Runtime.TicketRuntimeEngine>();
-builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Documents.SaeDocumentParser>();
+builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Documents.SaeDocumentParser>(sp =>
+{
+    var schemasDir = Path.Combine(AppContext.BaseDirectory, "Schemas");
+    return new SAE.STUDIO.Core.Labels.Printing.Documents.SaeDocumentParser(schemasDir);
+});
+builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Documents.DocumentPrintEngine>();
+builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Documents.ZxingBarcodeProvider>();
 builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Documents.SaeDocumentRuntimeEngine>();
 builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Documents.PdfDocumentRenderer>();
 builder.Services.AddSingleton<SAE.STUDIO.Core.Labels.Printing.Contracts.IQrService,

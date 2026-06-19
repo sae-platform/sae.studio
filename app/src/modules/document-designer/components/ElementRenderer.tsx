@@ -13,27 +13,41 @@ export function ElementRenderer({ element, scale, rendered }: ElementRendererPro
   const el = element;
 
   if (el.type === "text") {
+    const ta = el.align ?? "left";
+    const va = el.verticalAlign === "middle" ? "center" : el.verticalAlign === "bottom" ? "flex-end" : "flex-start";
+    const td = [
+      el.underline ? "underline" : "",
+      (el as any).strikethrough ? "line-through" : "",
+      (el as any).overline ? "overline" : "",
+    ].filter(Boolean).join(" ") || "none";
+    const ag = (el as any).autoGrow;
     return (
       <div
         style={{
           width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "flex-start",
+          height: ag ? "auto" : "100%",
           fontFamily: el.font ?? "Arial, sans-serif",
           fontSize: `${(el.size ?? 10) * scale * 0.352778}px`,
           fontWeight: el.bold ? "bold" : "normal",
           fontStyle: el.italic ? "italic" : "normal",
-          textDecoration: el.underline ? "underline" : "none",
-          textAlign: el.align ?? "left",
+          textDecoration: td as any,
           color: el.color ?? "#1e293b",
           wordBreak: "break-word",
-          overflow: "hidden",
-          whiteSpace: "pre-wrap",
-          lineHeight: 1.3,
+          overflow: ag ? "visible" : "hidden",
+          whiteSpace: ag ? "normal" : "pre-wrap",
+          lineHeight: (el as any).lineHeight ?? 1.3,
+          letterSpacing: ((el as any).letterSpacing ?? 0) > 0 ? `${(el as any).letterSpacing}em` : undefined,
+          textTransform: (el as any).textTransform !== "none" ? (el as any).textTransform : undefined,
+          backgroundColor: (el as any).backgroundColor || undefined,
+          padding: (el as any).padding ? `${(el as any).padding * scale * 0.352778}px` : undefined,
+          opacity: el.hidden ? 0.3 : 1,
+          display: "flex",
+          alignItems: va as any,
         }}
       >
-        {rendered?.resolvedContent ?? el.content}
+        <span style={{ width: "100%", textAlign: ta as any }}>
+          {rendered?.resolvedContent ?? el.content}
+        </span>
       </div>
     );
   }
